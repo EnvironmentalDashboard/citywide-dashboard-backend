@@ -5,8 +5,6 @@ const PORT = 80;
 const DEVELOPMENT = 0;
 const ENVIRONMENT = DEVELOPMENT;
 
-const db = require('./db');
-
 const glyphs = require('./glyphs');
 
 const routers = {
