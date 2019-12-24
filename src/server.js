@@ -5,6 +5,8 @@ const PORT = 3006;
 const DEVELOPMENT = 0;
 const ENVIRONMENT = DEVELOPMENT;
 
+const db = require('./db');
+
 const glyphs = require('./glyphs');
 
 const routers = {
