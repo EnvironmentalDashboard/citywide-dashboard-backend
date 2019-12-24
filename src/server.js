@@ -1,6 +1,6 @@
 const express = require('express');
 const server = express();
-const PORT = 3006;
+const PORT = 80;
 
 const DEVELOPMENT = 0;
 const ENVIRONMENT = DEVELOPMENT;
