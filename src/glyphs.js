@@ -35,6 +35,9 @@ router.get('/:_id', (req, res) => (
 /**
  * I wonder if this is too specific to a particular implementation?
  * But, I think for now it makes sense to exist.
+ *
+ * Note: this function does assume any view will have gauges attached.
+ * For now, this is a fair assumption to make, but it might break in the future?
  */
 router.get('/:_id/gauges', (req, res) => (
   getGlyphById(req.params._id)
@@ -42,5 +45,18 @@ router.get('/:_id/gauges', (req, res) => (
     res.json(result.view ? result.view.gauges : [])
   ))
 ));
+
+/**
+ * This also assumes that any view will have gauges attached.
+ */
+router.get('/:_id/gauges/:index', (req, res) => {
+  const realIndex = req.params.index - 1;
+
+  getGlyphById(req.params._id)
+  .then(result => (
+    res.json((result.view && realIndex > 0 && result.view.gauges.length > realIndex)
+      ? result.view.gauges[realIndex] : {})
+  ));
+});
 
 module.exports = router;
