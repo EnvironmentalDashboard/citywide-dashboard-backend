@@ -75,4 +75,22 @@ router.get('/:_id/gauges/:index', (req, res) => {
   ));
 });
 
+router.post('/:_id/cache', (req, res) => (
+    req.body.data
+    ?
+      db.collection.updateOne(
+        { _id: req.params._id },
+        {
+          $set: {
+            cachedData: req.body.data
+          }
+        }
+      )
+      .then(result => res.json(result))
+    :
+      res.json({
+        'errors': ['No data provided!']
+      })
+));
+
 module.exports = router;
