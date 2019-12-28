@@ -31,4 +31,15 @@ router.get('/:_id', (req, res) => (
   ))
 ));
 
+/**
+ * I wonder if this is too specific to a particular implementation?
+ * But, I think for now it makes sense to exist.
+ */
+router.get('/:_id/gauges', (req, res) => (
+  getGlyphById(req.params._id)
+  .then(result => (
+    res.json(result.view ? result.view.gauges : [])
+  ))
+));
+
 module.exports = router;
