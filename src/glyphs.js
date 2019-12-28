@@ -19,7 +19,8 @@ const getGlyphById = id => (
 );
 
 router.get('/', (req, res) => (
-  db.collection.find({}).sort({ layer: 1 }).toArray().then(result => (
+  db.collection.find({}).sort({ layer: 1 }).toArray()
+  .then(result => (
     res.json(result)
   ))
 ));
