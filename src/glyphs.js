@@ -18,6 +18,23 @@ const getGlyphById = id => (
   ))
 );
 
+const getGlyphGaugesById = id => (
+  getGlyphById(id)
+  .then(result => (
+    result.view ? result.view.gauges : []
+  ))
+);
+
+/**
+ * Gets a glyph gauge by both a glyph ID and a gauge index.
+ */
+const getGlyphGauge = (id, index) => (
+  getGlyphGaugesById(id)
+  .then(result => (
+    (index >= 0 && result.length > index) ? result[index] : {}
+  ))
+)
+
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
   .then(result => (
@@ -40,9 +57,9 @@ router.get('/:_id', (req, res) => (
  * For now, this is a fair assumption to make, but it might break in the future?
  */
 router.get('/:_id/gauges', (req, res) => (
-  getGlyphById(req.params._id)
+  getGlyphGaugesById(req.params._id)
   .then(result => (
-    res.json(result.view ? result.view.gauges : [])
+    res.json(result)
   ))
 ));
 
@@ -52,10 +69,9 @@ router.get('/:_id/gauges', (req, res) => (
 router.get('/:_id/gauges/:index', (req, res) => {
   const realIndex = req.params.index - 1;
 
-  getGlyphById(req.params._id)
+  getGlyphGauge(req.params._id, realIndex)
   .then(result => (
-    res.json((result.view && realIndex > 0 && result.view.gauges.length > realIndex)
-      ? result.view.gauges[realIndex] : {})
+    res.json(result)
   ));
 });
 
