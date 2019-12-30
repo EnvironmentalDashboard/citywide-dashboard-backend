@@ -117,4 +117,27 @@ router.post('/:_id/cache', (req, res) => {
   }
 });
 
+router.post('/:_id/gauges/:index/cache', (req, res) => {
+  const processed = processCacheRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    db.collection.updateOne(
+      {
+        _id: req.params._id,
+        'view.gauges': { $exists: true }
+      },
+      {
+        $set: {
+          [`view.gauges.${req.params.index - 1}.data`]: processed.parsed
+        }
+      }
+    )
+    .then(result => res.json(result));
+  }
+});
+
 module.exports = router;
