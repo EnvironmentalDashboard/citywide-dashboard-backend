@@ -33,7 +33,29 @@ const getGlyphGauge = (id, index) => (
   .then(result => (
     (index >= 0 && result.length > index) ? result[index] : {}
   ))
-)
+);
+
+// The two possible errors are no data present or malformed JSON.
+const processCacheRequest = req => {
+  const processed = {
+    errors: [],
+    parsed: {}
+  };
+
+  if (!req.body.data) {
+    processed.errors.push('No data provided!');
+  }
+
+  try {
+    processed.parsed = JSON.parse(req.body.data);
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      processed.errors.push('Invalid JSON body!');
+    }
+  }
+
+  return processed;
+};
 
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
@@ -76,42 +98,23 @@ router.get('/:_id/gauges/:index', (req, res) => {
 });
 
 router.post('/:_id/cache', (req, res) => {
-  let errors = [];
-  let parsed = {};
+  const processed = processCacheRequest(req);
 
-  if (!req.body.data) {
-    errors.push('No data provided!');
-
+  if (processed.errors.length > 0) {
     res.json({
-      'errors': errors
+      'errors': processed.errors
     });
-
-    return;
-  }
-
-  try {
-    parsed = JSON.parse(req.body.data);
-  } catch (e) {
-    if (e instanceof SyntaxError) {
-      errors.push('Invalid JSON body!');
-
-      res.json({
-        'errors': errors
-      });
-
-      return;
-    }
-  }
-
-  db.collection.updateOne(
-    { _id: req.params._id },
-    {
-      $set: {
-        data: JSON.parse(req.body.data)
+  } else {
+    db.collection.updateOne(
+      { _id: req.params._id },
+      {
+        $set: {
+          data: processed.parsed
+        }
       }
-    }
-  )
-  .then(result => res.json(result));
+    )
+    .then(result => res.json(result));
+  }
 });
 
 module.exports = router;
