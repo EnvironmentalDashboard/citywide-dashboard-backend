@@ -128,7 +128,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
     db.collection.updateOne(
       {
         _id: req.params._id,
-        'view.gauges': { $exists: true }
+        [`view.gauges.${req.params.index - 1}`]: { $exists: true }
       },
       {
         $set: {
