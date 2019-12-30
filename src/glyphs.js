@@ -75,22 +75,43 @@ router.get('/:_id/gauges/:index', (req, res) => {
   ));
 });
 
-router.post('/:_id/cache', (req, res) => (
-    req.body.data
-    ?
-      db.collection.updateOne(
-        { _id: req.params._id },
-        {
-          $set: {
-            cachedData: req.body.data
-          }
-        }
-      )
-      .then(result => res.json(result))
-    :
+router.post('/:_id/cache', (req, res) => {
+  let errors = [];
+  let parsed = {};
+
+  if (!req.body.data) {
+    errors.push('No data provided!');
+
+    res.json({
+      'errors': errors
+    });
+
+    return;
+  }
+
+  try {
+    parsed = JSON.parse(req.body.data);
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      errors.push('Invalid JSON body!');
+
       res.json({
-        'errors': ['No data provided!']
-      })
-));
+        'errors': errors
+      });
+
+      return;
+    }
+  }
+
+  db.collection.updateOne(
+    { _id: req.params._id },
+    {
+      $set: {
+        data: JSON.parse(req.body.data)
+      }
+    }
+  )
+  .then(result => res.json(result));
+});
 
 module.exports = router;
