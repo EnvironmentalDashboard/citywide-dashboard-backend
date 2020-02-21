@@ -28,9 +28,11 @@ if (!script) {
 const program = require(`./scripts/${script}.js`);
 
 db.connect(url).then((collection) => {
-  if (program.canRun(collection)) {
-    program.run(collection);
-  } else {
-    console.log('The system is already set up to handle this update.');
-  }
+  program.canRun(collection).then(answer => {
+    if (answer) {
+      program.run(collection);
+    } else {
+      console.log('The system is already set up to handle this update.');
+    }
+  });
 });
