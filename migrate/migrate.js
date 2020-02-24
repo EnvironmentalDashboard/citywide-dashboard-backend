@@ -32,7 +32,8 @@ db.connect(url).then((collection) => {
     if (answer) {
       program.run(collection);
     } else {
-      console.log('The system is already set up to handle this update.');
+      console.log('The system is already set up to handle this update. Exiting');
+      process.exit(0);
     }
   });
 });
