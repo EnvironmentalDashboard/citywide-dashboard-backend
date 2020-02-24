@@ -19,7 +19,50 @@ const canRun = collection => (
 );
 
 const run = collection => {
+  collection.find({
+    'view': {
+      $exists: true
+    }
+  })
+  .toArray()
+  .then(result => (
+    result.map(entry => ({
+      id: entry._id,
+      gauges: entry.view.gauges
+    }))
+  ))
+  .then(gaugeEntries => {
+    gaugeEntries.forEach(gauge => {
+      // Maps our old gauge type (string) into our new type (object).
+      const newGauges = gauge.gauges.map(e => (
+        typeof e === 'string' ? (
+          {
+            url: e
+          }
+        ) : (
+          e
+        )
+      ));
 
+      collection.update(
+        {
+          _id: gauge.id
+        },
+        {
+          $set: {
+            'view.gauges': newGauges
+          }
+        }
+      )
+      .then(wc => {
+        if (!wc.writeConcernError) {
+          console.log(`Successfully updated ${gauge.id}`);
+        } else {
+          console.error(`Error updating ${gauge.id}`);
+        }
+      });
+    });
+  });
 };
 
 module.exports = { canRun, run };
