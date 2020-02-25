@@ -1,11 +1,15 @@
 const express = require('express');
 const server = express();
+const bodyParser = require('body-parser');
 const PORT = 80;
 
 const DEVELOPMENT = 0;
 const ENVIRONMENT = DEVELOPMENT;
 
 const glyphs = require('./glyphs');
+
+server.use(bodyParser.json());
+server.use(bodyParser.urlencoded({ extended: true }));
 
 const routers = {
   '/glyphs': glyphs
