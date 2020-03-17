@@ -7,6 +7,8 @@ const canRun = collection => (
     })
     .toArray()
     .then(r => {
+      // Each view is turned into only its gauge entry,
+      // so therefore we now have an array of arrays of gauges.
       const gauges = r.map(e => e.view.gauges);
 
       // If any of our gauges is simply a string, we should transition.
