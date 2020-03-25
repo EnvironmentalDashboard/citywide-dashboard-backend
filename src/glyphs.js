@@ -70,14 +70,13 @@ const processMessageRequest = req => {
     parsed: {}
   };
 
-  console.log(req);
-
-  if (!req.body.message) {
+  if (!req.body.message || !req.body.prob) {
     processed.errors.push('No data provided!');
   }
 
   try {
     processed.parsed = JSON.parse(req.body.message);
+    processed.parsedProb = JSON.parse(req.body.prob);
   } catch (e) {
     if (e instanceof SyntaxError) {
       processed.errors.push('Invalid JSON body!');
@@ -193,7 +192,8 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
       },
       {
         $set: {
-          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.text`]: processed.parsed
+          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.text`]: processed.parsed,
+          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.probability`]: processed.parsedProb
         }
       }
     )
