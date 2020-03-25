@@ -64,6 +64,29 @@ const processCacheRequest = req => {
   return processed;
 };
 
+const processMessageRequest = req => {
+  const processed = {
+    errors: [],
+    parsed: {}
+  };
+
+  console.log(req);
+
+  if (!req.body.message) {
+    processed.errors.push('No data provided!');
+  }
+
+  try {
+    processed.parsed = JSON.parse(req.body.message);
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      processed.errors.push('Invalid JSON body!');
+    }
+  }
+
+  return processed;
+};
+
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
   .then(result => (
@@ -154,7 +177,10 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
   }
 });
 
+//Used to updated a message attached to a gauge
 router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
+  const processed = processMessageRequest(req);
+
   if (processed.errors.length > 0) {
     res.json({
       'errors': processed.errors
@@ -163,11 +189,35 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
     db.collection.updateOne(
       {
         _id: req.params._id,
-        [`view.gauges[].${req.params.index - 1}.messages.${req.params.num}`]: { $exists: true }
+        [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`]: { $exists: true }
       },
       {
         $set: {
-          [`view.gauges[].${req.params.index - 1}.messages.${req.params.num}.text`]: res
+          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.text`]: processed.parsed
+        }
+      }
+    )
+    .then(result => res.json(result));
+  }
+});
+
+//Used to update a message attached to a view
+router.post('/:_id/messages/:num', (req, res) => {
+  const processed = processMessageRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    db.collection.updateOne(
+      {
+        _id: req.params._id,
+        [`view.messages.${req.params.num - 1}`]: { $exists: true }
+      },
+      {
+        $set: {
+          [`view.messages.${req.params.num - 1}.text`]: processed.parsed
         }
       }
     )
