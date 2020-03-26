@@ -70,13 +70,13 @@ const processMessageRequest = req => {
     parsed: {}
   };
 
-  if (!req.body.message || !req.body.prob) {
+  if (!req.body.message || !req.body.probability) {
     processed.errors.push('No data provided!');
   }
 
   try {
-    processed.parsed = JSON.parse(req.body.message);
-    processed.parsedProb = JSON.parse(req.body.prob);
+    processed.message = JSON.parse(req.body.message);
+    processed.probability = JSON.parse(req.body.probability);
   } catch (e) {
     if (e instanceof SyntaxError) {
       processed.errors.push('Invalid JSON body!');
@@ -176,7 +176,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
   }
 });
 
-//Used to updated a message attached to a gauge
+//Used to update a message attached to a gauge
 router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
   const processed = processMessageRequest(req);
 
@@ -192,8 +192,8 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
       },
       {
         $set: {
-          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.text`]: processed.parsed,
-          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.probability`]: processed.parsedProb
+          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.text`]: processed.message,
+          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.probability`]: processed.probability
         }
       }
     )
@@ -217,7 +217,8 @@ router.post('/:_id/messages/:num', (req, res) => {
       },
       {
         $set: {
-          [`view.messages.${req.params.num - 1}.text`]: processed.parsed
+          [`view.messages.${req.params.num - 1}.text`]: processed.message,
+          [`view.messages.${req.params.num - 1}.probability`]: processed.probability
         }
       }
     )
