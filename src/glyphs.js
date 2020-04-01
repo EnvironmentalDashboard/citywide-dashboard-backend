@@ -176,7 +176,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
   }
 });
 
-//Used to update a message attached to a gauge
+//Used to update a message attached to a gauge or view
 router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
   const processed = processMessageRequest(req);
 
@@ -185,15 +185,24 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
       'errors': processed.errors
     });
   } else {
+
+    let path = `view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`;
+    if (req.params.index == 0) {
+      path = `view.messages.${req.params.num - 1}`;
+    }
+
+    console.log(path)
+    console.log(req.params.index == 0)
+
     db.collection.updateOne(
       {
         _id: req.params._id,
-        [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`]: { $exists: true }
+        [path]: { $exists: true }
       },
       {
         $set: {
-          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.text`]: processed.message,
-          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}.probability`]: processed.probability
+          [path + ".text"]: processed.message,
+          [path + ".probability"]: processed.probability
         }
       }
     )
@@ -201,29 +210,5 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
   }
 });
 
-//Used to update a message attached to a view
-router.post('/:_id/messages/:num', (req, res) => {
-  const processed = processMessageRequest(req);
-
-  if (processed.errors.length > 0) {
-    res.json({
-      'errors': processed.errors
-    });
-  } else {
-    db.collection.updateOne(
-      {
-        _id: req.params._id,
-        [`view.messages.${req.params.num - 1}`]: { $exists: true }
-      },
-      {
-        $set: {
-          [`view.messages.${req.params.num - 1}.text`]: processed.message,
-          [`view.messages.${req.params.num - 1}.probability`]: processed.probability
-        }
-      }
-    )
-    .then(result => res.json(result));
-  }
-});
 
 module.exports = router;
