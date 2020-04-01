@@ -191,9 +191,6 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
       path = `view.messages.${req.params.num - 1}`;
     }
 
-    console.log(path)
-    console.log(req.params.index == 0)
-
     db.collection.updateOne(
       {
         _id: req.params._id,
@@ -201,8 +198,8 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
       },
       {
         $set: {
-          [path + ".text"]: processed.message,
-          [path + ".probability"]: processed.probability
+          [`${path}.text`]: processed.message,
+          [`${path}.probability`]: processed.probability
         }
       }
     )
