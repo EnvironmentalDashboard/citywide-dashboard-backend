@@ -193,12 +193,11 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
     if (req.params.index == 0) {
       path = `view.messages.${req.params.num - 1}`;
     }
-    
+
     if (processed.pass == "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
       db.collection.updateOne(
         {
-          _id: req.params._id,
-          [path]: { $exists: true }
+          _id: req.params._id
         },
         {
           $set: {
