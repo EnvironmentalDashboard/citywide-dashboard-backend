@@ -5,6 +5,8 @@ const ObjectId = require('mongodb').ObjectId;
 
 const db = require('./db');
 
+const sha256 = require('js-sha256');
+
 const getGlyphById = id => (
   db.collection.findOne({
     _id: id
@@ -77,6 +79,7 @@ const processMessageRequest = req => {
   try {
     processed.message = JSON.parse(req.body.message);
     processed.probability = JSON.parse(req.body.probability);
+    processed.pass = sha256(JSON.parse(req.body.pass) + "719GxFYNgo");
   } catch (e) {
     if (e instanceof SyntaxError) {
       processed.errors.push('Invalid JSON body!');
@@ -190,20 +193,22 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
     if (req.params.index == 0) {
       path = `view.messages.${req.params.num - 1}`;
     }
-
-    db.collection.updateOne(
-      {
-        _id: req.params._id,
-        [path]: { $exists: true }
-      },
-      {
-        $set: {
-          [`${path}.text`]: processed.message,
-          [`${path}.probability`]: processed.probability
+    
+    if (processed.pass == "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+      db.collection.updateOne(
+        {
+          _id: req.params._id,
+          [path]: { $exists: true }
+        },
+        {
+          $set: {
+            [`${path}.text`]: processed.message,
+            [`${path}.probability`]: processed.probability
+          }
         }
-      }
-    )
-    .then(result => res.json(result));
+      )
+      .then(result => res.json(result));
+    }
   }
 });
 
