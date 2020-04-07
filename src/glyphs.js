@@ -207,6 +207,8 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
         }
       )
       .then(result => res.json(result));
+    } else {
+      res.send('Invalid password.');
     }
   }
 });
