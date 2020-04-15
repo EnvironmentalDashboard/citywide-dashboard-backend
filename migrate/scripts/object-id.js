@@ -28,10 +28,11 @@ const run = collection => {
   .then(idEntries => {
     idEntries.forEach(idEntry => {
       if (typeof idEntry._id === "string") {
-        let newId = collection.findOne({_id:idEntry._id});
-        newId._id = ObjectId(idEntry._id);
-        collection.deleteOne({_id:idEntry._id});
-        collection.insertOne(newId);
+        let newId = ObjectId(idEntry._id);
+        let oldId = idEntry._id;
+        idEntry._id = newId;
+        collection.insertOne(idEntry);
+        collection.deleteOne({ _id: oldId });
         console.log(`Successfully updated ${idEntry._id}`)
       }
     });
