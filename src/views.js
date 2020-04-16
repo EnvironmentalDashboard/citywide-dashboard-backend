@@ -4,7 +4,7 @@ const router = express.Router();
 const db = require('./db');
 
 const getViews = () => (
-  db.collection.findOne({
+  db.collection.find({
     view: {$exists: true}
   })
 );
