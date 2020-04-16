@@ -7,6 +7,7 @@ const DEVELOPMENT = 0;
 const ENVIRONMENT = DEVELOPMENT;
 
 const glyphs = require('./glyphs');
+const view = require('./views');
 
 server.use(bodyParser.json());
 server.use(bodyParser.urlencoded({ extended: true }));
