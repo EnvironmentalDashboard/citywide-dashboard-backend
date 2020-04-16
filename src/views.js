@@ -3,14 +3,10 @@ const router = express.Router();
 
 const db = require('./db');
 
-const getViews => (
+router.get('/', (req, res) => (
   db.collection.find({
     view: {$exists: true}
   })
-);
-
-router.get('/', (req, res) => (
-  getViews()
   .then(result => (
     res.json(result)
   ))
