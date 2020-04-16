@@ -13,6 +13,7 @@ server.use(bodyParser.urlencoded({ extended: true }));
 
 const routers = {
   '/glyphs': glyphs
+  '/views': views
 };
 
 if (ENVIRONMENT === DEVELOPMENT) {
