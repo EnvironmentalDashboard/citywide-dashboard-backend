@@ -10,14 +10,7 @@ const sha256 = require('js-sha256');
 const getGlyphById = id => (
   db.collection.findOne({
     _id: new ObjectId(id)
-  }).then(result => (
-    // This ternary situation should not have to happen in an ideal world.
-    result ? result : db.collection.findOne({
-      _id: new ObjectId(id)
-    }).then(oresult => (
-      oresult
-    ))
-  ))
+  }).then(oresult => (oresult))
 );
 
 const getGlyphGaugesById = id => (
