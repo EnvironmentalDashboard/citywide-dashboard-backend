@@ -1,5 +1,5 @@
-const ObjectId = require("mongodb");
-
+var mongodb = require("mongodb"),
+    ObjectId = mongodb.ObjectId
 const canRun = collection => (
   new Promise((resolve, reject) => {
     collection.find({
@@ -9,12 +9,13 @@ const canRun = collection => (
     })
     .toArray()
     .then(r => {
-      resolve(ids.some(i => i._id));
+      const ids = r.map(e => e._id);
+      resolve(ids.some(i => i));
     });
   })
 );
-
 const run = collection => {
+  let itr = 0;
   collection.find({
     '_id': {
       $exists: true
@@ -34,5 +35,4 @@ const run = collection => {
     });
   });
 };
-
 module.exports = { canRun, run };
