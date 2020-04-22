@@ -79,6 +79,10 @@ const processMessageRequest = req => {
     }
   }
 
+  if (processed.pass !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+    processed.errors.push('Invalid password.')
+  }
+
   return processed;
 };
 
@@ -172,7 +176,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
   }
 });
 
-//Used to update a message attached to a gauge or view
+//Used to update a message attached to a gauge
 router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
   const processed = processMessageRequest(req);
 
@@ -181,30 +185,47 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
       'errors': processed.errors
     });
   } else {
+    const path = `view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`;
 
-    let path = `view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`;
-    if (req.params.index == 0) {
-      path = `view.messages.${req.params.num - 1}`;
-    }
-
-    if (processed.pass === "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
-      db.collection.updateOne(
-        {
-          _id: new ObjectId(req.params._id)
-        },
-        {
-          $set: {
-            [`${path}.text`]: processed.message,
-            [`${path}.probability`]: processed.probability
-          }
+    db.collection.updateOne(
+      {
+        _id: new ObjectId(req.params._id)
+      },
+      {
+        $set: {
+          [`${path}.text`]: processed.message,
+          [`${path}.probability`]: processed.probability
         }
-      )
-      .then(result => res.json(result));
-    } else {
-      res.json({errors: 'Invalid password.'});
-    }
+      }
+    )
+    .then(result => res.json(result));
   }
 });
 
+//Used to update a message attached to a view
+router.post('/:_id/messages/:num', (req, res) => {
+  const processed = processMessageRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    const path = `view.messages.${req.params.num - 1}`;
+
+    db.collection.updateOne(
+      {
+        _id: new ObjectId(req.params._id)
+      },
+      {
+        $set: {
+          [`${path}.text`]: processed.message,
+          [`${path}.probability`]: processed.probability
+        }
+      }
+    )
+    .then(result => res.json(result));
+  }
+});
 
 module.exports = router;
