@@ -86,6 +86,26 @@ const processMessageRequest = req => {
   return processed;
 };
 
+const processAddRequest = req => {
+  const processed = {
+    errors: [],
+    parsed: {}
+  };
+  try {
+    processed.pass = sha256(JSON.parse(req.body.pass) + "719GxFYNgo");
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      processed.errors.push('Invalid JSON body!');
+    }
+  }
+
+  if (processed.pass !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+    processed.errors.push('Invalid password.')
+  }
+
+  return processed;
+};
+
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
   .then(result => (
@@ -201,6 +221,29 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
     .then(result => res.json(result));
   }
 });
+
+router.post('/:_id/gauges/:index/messages/', (req, res) => {
+  const processed = processAddRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    db.collection.updateOne(
+      {
+        _id: new ObjectId(req.params._id)
+      },
+      {
+        $set: {
+          [`view.gauges.${req.params.index - 1}.messages`]: []
+        }
+      }
+    )
+    .then(result => res.json(result));
+  }
+});
+
 
 //Used to update a message attached to a view
 router.post('/:_id/messages/:num', (req, res) => {
