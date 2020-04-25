@@ -106,6 +106,21 @@ const processAddRequest = req => {
   return processed;
 };
 
+const updateMessages = (id, path, req) => {
+  db.collection.updateOne(
+    {
+      _id: new ObjectId(id)
+    },
+    {
+      $set: {
+        [`${path}.text`]: processed.message,
+        [`${path}.probability`]: processed.probability
+      }
+    }
+  )
+  .then(result => res.json(result));
+}
+
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
   .then(result => (
@@ -205,20 +220,8 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
       'errors': processed.errors
     });
   } else {
-    const path = `view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`;
-
-    db.collection.updateOne(
-      {
-        _id: new ObjectId(req.params._id)
-      },
-      {
-        $set: {
-          [`${path}.text`]: processed.message,
-          [`${path}.probability`]: processed.probability
-        }
-      }
-    )
-    .then(result => res.json(result));
+    updateMessages(req.params._id,
+    `view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`, processed);
   }
 });
 
@@ -254,21 +257,7 @@ router.post('/:_id/messages/:num', (req, res) => {
       'errors': processed.errors
     });
   } else {
-    const path = `view.messages.${req.params.num - 1}`;
-
-    db.collection.updateOne(
-      {
-        _id: new ObjectId(req.params._id)
-      },
-      {
-        $set: {
-          [`${path}.text`]: processed.message,
-          [`${path}.probability`]: processed.probability
-        }
-      }
-    )
-    .then(result => res.json(result));
-  }
+    updateMessages(req.params._id, `view.messages.${req.params.num - 1}`, processed);
 });
 
 module.exports = router;
