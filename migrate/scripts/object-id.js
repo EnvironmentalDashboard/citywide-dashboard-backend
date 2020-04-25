@@ -24,8 +24,8 @@ const run = collection => {
   .then(idEntries => {
     idEntries.forEach(idEntry => {
       if (typeof idEntry._id === "string") {
-        let newId = ObjectId(idEntry._id);
-        let oldId = idEntry._id;
+        const newId = ObjectId(idEntry._id);
+        const oldId = idEntry._id;
         idEntry._id = newId;
         collection.insertOne(idEntry);
         collection.deleteOne({ _id: oldId });
