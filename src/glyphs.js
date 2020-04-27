@@ -107,19 +107,19 @@ const processAddRequest = req => {
 };
 
 const updateMessages = (id, path, req) => {
-  db.collection.updateOne(
+  return db.collection.updateOne(
     {
       _id: new ObjectId(id)
     },
     {
       $set: {
-        [`${path}.text`]: processed.message,
-        [`${path}.probability`]: processed.probability
+        [`${path}.text`]: req.message,
+        [`${path}.probability`]: req.probability
       }
     }
   )
-  .then(result => res.json(result));
-}
+  .then(result => {return result});
+};
 
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
@@ -225,8 +225,9 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
   }
 });
 
-router.post('/:_id/gauges/:index/messages/', (req, res) => {
+router.post('/:_id/gauges/:index/messages', (req, res) => {
   const processed = processAddRequest(req);
+  const test = 'banana';
 
   if (processed.errors.length > 0) {
     res.json({
@@ -239,7 +240,7 @@ router.post('/:_id/gauges/:index/messages/', (req, res) => {
       },
       {
         $set: {
-          [`view.gauges.${req.params.index - 1}.messages`]: []
+          [`view.gauges.${req.params.index - 1}.messages`]: `\[6, ${test}\]`
         }
       }
     )
@@ -257,7 +258,8 @@ router.post('/:_id/messages/:num', (req, res) => {
       'errors': processed.errors
     });
   } else {
-    updateMessages(req.params._id, `view.messages.${req.params.num - 1}`, processed);
+    updateMessages(req.params._id, `view.messages.${req.params.num - 1}`, processed).then(result => res.json(result));
+  }
 });
 
 module.exports = router;
