@@ -221,7 +221,7 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
     });
   } else {
     updateMessages(req.params._id,
-    `view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`, processed).then(result => res json(result));
+    `view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`, processed).then(result => res.json(result));
   }
 });
 
