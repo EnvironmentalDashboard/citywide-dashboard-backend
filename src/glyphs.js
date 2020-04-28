@@ -227,7 +227,6 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
 
 router.post('/:_id/gauges/:index/messages', (req, res) => {
   const processed = processAddRequest(req);
-  const test = 'banana';
 
   if (processed.errors.length > 0) {
     res.json({
@@ -240,7 +239,7 @@ router.post('/:_id/gauges/:index/messages', (req, res) => {
       },
       {
         $set: {
-          [`view.gauges.${req.params.index - 1}.messages`]: `\[6, ${test}\]`
+          [`view.gauges.${req.params.index - 1}.messages`]: []
         }
       }
     )
