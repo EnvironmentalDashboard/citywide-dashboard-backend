@@ -70,42 +70,15 @@ const processMessageRequest = req => {
   }
 
   try {
-    processed.message = JSON.parse(req.body.message);
-    processed.probability = JSON.parse(req.body.probability);
-    processed.pass = sha256(JSON.parse(req.body.pass) + "719GxFYNgo");
+    processed.parsed.message = JSON.parse(req.body.message);
+    processed.parsed.probability = JSON.parse(req.body.probability);
   } catch (e) {
     if (e instanceof SyntaxError) {
       processed.errors.push('Invalid JSON body!');
     }
   }
 
-  if (processed.pass !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
-    processed.errors.push('Invalid password.')
-  }
-
-  return processed;
-};
-
-const processAddRequest = req => {
-  const processed = {
-    errors: [],
-    parsed: {}
-  };
-
-  if (!req.body.message || !req.body.probability) {
-    processed.errors.push('No data provided!');
-  }
-
-  try {
-    processed.body = {'text': JSON.parse(req.body.message), 'probability': JSON.parse(req.body.probability)};
-    processed.pass = sha256(JSON.parse(req.body.pass) + "719GxFYNgo");
-  } catch (e) {
-    if (e instanceof SyntaxError) {
-      processed.errors.push('Invalid JSON body!');
-    }
-  }
-
-  if (processed.pass !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+  if (sha256(JSON.parse(req.body.pass) + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
     processed.errors.push('Invalid password.')
   }
 
@@ -119,8 +92,8 @@ const updateMessages = (id, path, req) => {
     },
     {
       $set: {
-        [`${path}.text`]: req.message,
-        [`${path}.probability`]: req.probability
+        [`${path}.text`]: req.parsed.message,
+        [`${path}.probability`]: req.parsed.probability
       }
     }
   )
@@ -244,7 +217,7 @@ router.post('/:_id/gauges/:index/messages', (req, res) => {
       },
       {
         $push: {
-          [`view.gauges.${req.params.index - 1}.messages`]: processed.body
+          [`view.gauges.${req.params.index - 1}.messages`]: processed.parsed
         }
       }
     )
