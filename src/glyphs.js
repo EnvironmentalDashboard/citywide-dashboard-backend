@@ -118,7 +118,7 @@ const updateMessages = (id, path, req) => {
       }
     }
   )
-  .then(result => {return result});
+  .then(result => result);
 };
 
 router.get('/', (req, res) => (
