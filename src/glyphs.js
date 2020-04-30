@@ -91,7 +91,13 @@ const processAddRequest = req => {
     errors: [],
     parsed: {}
   };
+
+  if (!req.body.message || !req.body.probability) {
+    processed.errors.push('No data provided!');
+  }
+
   try {
+    processed.body = {'text': JSON.parse(req.body.message), 'probability': JSON.parse(req.body.probability)};
     processed.pass = sha256(JSON.parse(req.body.pass) + "719GxFYNgo");
   } catch (e) {
     if (e instanceof SyntaxError) {
@@ -118,7 +124,6 @@ const updateMessages = (id, path, req) => {
       }
     }
   )
-  .then(result => result);
 };
 
 router.get('/', (req, res) => (
@@ -238,8 +243,8 @@ router.post('/:_id/gauges/:index/messages', (req, res) => {
         _id: new ObjectId(req.params._id)
       },
       {
-        $set: {
-          [`view.gauges.${req.params.index - 1}.messages`]: []
+        $push: {
+          [`view.gauges.${req.params.index - 1}.messages`]: processed.body
         }
       }
     )
