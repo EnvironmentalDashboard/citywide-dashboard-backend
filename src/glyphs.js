@@ -65,7 +65,7 @@ const processMessageRequest = req => {
     parsed: {}
   };
 
-  if (!req.body.message || !req.body.probability) {
+  if (!req.body.message || req.body.probability === undefined) {
     processed.errors.push('No data provided!');
   }
 
@@ -78,7 +78,7 @@ const processMessageRequest = req => {
     }
   }
 
-  if (!req.body.password || sha256(JSON.parse(req.body.pass) + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+  if (!req.body.pass || sha256(req.body.pass + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
     processed.errors.push('Invalid password.')
   }
 
