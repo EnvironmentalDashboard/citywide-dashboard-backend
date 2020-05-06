@@ -78,7 +78,7 @@ const processMessageRequest = req => {
     }
   }
 
-  if (sha256(JSON.parse(req.body.pass) + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+  if (!req.body.password || sha256(JSON.parse(req.body.pass) + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
     processed.errors.push('Invalid password.')
   }
 
@@ -204,7 +204,7 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
 });
 
 router.post('/:_id/gauges/:index/messages', (req, res) => {
-  const processed = processAddRequest(req);
+  const processed = processMessageRequest(req);
 
   if (processed.errors.length > 0) {
     res.json({
@@ -226,7 +226,7 @@ router.post('/:_id/gauges/:index/messages', (req, res) => {
 });
 
 router.post('/:_id/messages', (req, res) => {
-  const processed = processAddRequest(req);
+  const processed = processMessageRequest(req);
 
   if (processed.errors.length > 0) {
     res.json({
