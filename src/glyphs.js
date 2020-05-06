@@ -65,12 +65,12 @@ const processMessageRequest = req => {
     parsed: {}
   };
 
-  if (!req.body.message || req.body.probability === undefined) {
+  if (!req.body.text || req.body.probability === undefined) {
     processed.errors.push('No data provided!');
   }
 
   try {
-    processed.parsed.message = req.body.message;
+    processed.parsed.text = req.body.text;
     processed.parsed.probability = req.body.probability;
   } catch (e) {
     if (e instanceof SyntaxError) {
@@ -92,7 +92,7 @@ const updateMessages = (id, path, req) => {
     },
     {
       $set: {
-        [`${path}.text`]: req.parsed.message,
+        [`${path}.text`]: req.parsed.text,
         [`${path}.probability`]: req.parsed.probability
       }
     }
