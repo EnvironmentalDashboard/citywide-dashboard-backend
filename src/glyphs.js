@@ -225,6 +225,28 @@ router.post('/:_id/gauges/:index/messages', (req, res) => {
   }
 });
 
+router.post('/:_id/messages', (req, res) => {
+  const processed = processAddRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    db.collection.updateOne(
+      {
+        _id: new ObjectId(req.params._id)
+      },
+      {
+        $push: {
+          [`view.messages`]: processed.parsed
+        }
+      }
+    )
+    .then(result => res.json(result));
+  }
+});
+
 
 //Used to update a message attached to a view
 router.post('/:_id/messages/:num', (req, res) => {
