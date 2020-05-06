@@ -70,8 +70,8 @@ const processMessageRequest = req => {
   }
 
   try {
-    processed.parsed.message = JSON.parse(req.body.message);
-    processed.parsed.probability = JSON.parse(req.body.probability);
+    processed.parsed.message = req.body.message;
+    processed.parsed.probability = req.body.probability;
   } catch (e) {
     if (e instanceof SyntaxError) {
       processed.errors.push('Invalid JSON body!');
