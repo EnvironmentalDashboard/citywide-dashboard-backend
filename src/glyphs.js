@@ -5,23 +5,25 @@ const ObjectId = require('mongodb').ObjectId;
 
 const db = require('./db');
 
+const sha256 = require('js-sha256');
+
 const getGlyphById = id => (
   db.collection.findOne({
-    _id: id
-  }).then(result => (
-    // This ternary situation should not have to happen in an ideal world.
-    result ? result : db.collection.findOne({
-      _id: new ObjectId(id)
-    }).then(oresult => (
-      oresult
-    ))
-  ))
+    _id: new ObjectId(id)
+  }).then(oresult => (oresult))
 );
 
 const getGlyphGaugesById = id => (
   getGlyphById(id)
   .then(result => (
     result.view ? result.view.gauges : []
+  ))
+);
+
+const getGlyphMessagesById = id => (
+  getGlyphById(id)
+  .then(result => (
+    result.view ? result.view.messages : []
   ))
 );
 
@@ -57,6 +59,49 @@ const processCacheRequest = req => {
   return processed;
 };
 
+const processMessageRequest = req => {
+  const processed = {
+    errors: [],
+    parsed: {}
+  };
+
+  if (!req.body.text || req.body.probability === undefined) {
+    processed.errors.push('No data provided!');
+  }
+  if (req.params.index < 1 || req.params.num < 1) {
+    processed.errors.push('Invalid index provided!');
+  }
+
+  try {
+    processed.parsed.text = req.body.text;
+    processed.parsed.probability = req.body.probability;
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      processed.errors.push('Invalid JSON body!');
+    }
+  }
+
+  if (!req.body.pass || sha256(req.body.pass + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+    processed.errors.push('Invalid password.')
+  }
+
+  return processed;
+};
+
+const updateMessages = (id, path, req) => {
+  return db.collection.updateOne(
+    {
+      _id: new ObjectId(id)
+    },
+    {
+      $set: {
+        [`${path}.text`]: req.parsed.text,
+        [`${path}.probability`]: req.parsed.probability
+      }
+    }
+  )
+};
+
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
   .then(result => (
@@ -85,6 +130,13 @@ router.get('/:_id/gauges', (req, res) => (
   ))
 ));
 
+router.get('/:_id/messages', (req, res) => (
+  getGlyphMessagesById(req.params._id)
+  .then(result => (
+    res.json(result)
+  ))
+));
+
 /**
  * This also assumes that any view will have gauges attached.
  */
@@ -106,7 +158,7 @@ router.post('/:_id/cache', (req, res) => {
     });
   } else {
     db.collection.updateOne(
-      { _id: req.params._id },
+      { _id: new ObjectId(req.params._id) },
       {
         $set: {
           data: processed.parsed
@@ -127,7 +179,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
   } else {
     db.collection.updateOne(
       {
-        _id: req.params._id,
+        _id: new ObjectId(req.params._id),
         [`view.gauges.${req.params.index - 1}`]: { $exists: true }
       },
       {
@@ -137,6 +189,78 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
       }
     )
     .then(result => res.json(result));
+  }
+});
+
+//Used to update a message attached to a gauge
+router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
+  const processed = processMessageRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    updateMessages(req.params._id,
+    `view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`, processed).then(result => res.json(result));
+  }
+});
+
+router.post('/:_id/gauges/:index/messages', (req, res) => {
+  const processed = processMessageRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    db.collection.updateOne(
+      {
+        _id: new ObjectId(req.params._id)
+      },
+      {
+        $push: {
+          [`view.gauges.${req.params.index - 1}.messages`]: processed.parsed
+        }
+      }
+    )
+    .then(result => res.json(result));
+  }
+});
+
+router.post('/:_id/messages', (req, res) => {
+  const processed = processMessageRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    db.collection.updateOne(
+      {
+        _id: new ObjectId(req.params._id)
+      },
+      {
+        $push: {
+          [`view.messages`]: processed.parsed
+        }
+      }
+    )
+    .then(result => res.json(result));
+  }
+});
+
+
+//Used to update a message attached to a view
+router.post('/:_id/messages/:num', (req, res) => {
+  const processed = processMessageRequest(req);
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    updateMessages(req.params._id, `view.messages.${req.params.num - 1}`, processed).then(result => res.json(result));
   }
 });
 

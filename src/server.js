@@ -7,12 +7,14 @@ const DEVELOPMENT = 0;
 const ENVIRONMENT = DEVELOPMENT;
 
 const glyphs = require('./glyphs');
+const views = require('./views');
 
 server.use(bodyParser.json());
 server.use(bodyParser.urlencoded({ extended: true }));
 
 const routers = {
-  '/glyphs': glyphs
+  '/glyphs': glyphs,
+  '/views': views
 };
 
 if (ENVIRONMENT === DEVELOPMENT) {
