@@ -155,7 +155,7 @@ router.post('/:_id/cache', (req, res) => {
     });
   } else {
     db.collection.updateOne(
-      { _id: req.params._id },
+      { _id: new ObjectId(req.params._id) },
       {
         $set: {
           data: processed.parsed
@@ -176,7 +176,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
   } else {
     db.collection.updateOne(
       {
-        _id: req.params._id,
+        _id: new ObjectId(req.params._id),
         [`view.gauges.${req.params.index - 1}`]: { $exists: true }
       },
       {
