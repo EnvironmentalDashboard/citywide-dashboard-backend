@@ -68,7 +68,7 @@ const processMessageRequest = req => {
   if (!req.body.text || req.body.probability === undefined) {
     processed.errors.push('No data provided!');
   }
-  if (req.params.index < 1) {
+  if (req.params.index < 1 || req.params.num < 1) {
     processed.errors.push('Invalid index provided!');
   }
 
