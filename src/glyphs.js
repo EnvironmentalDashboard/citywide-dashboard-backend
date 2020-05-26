@@ -59,7 +59,7 @@ const processCacheRequest = req => {
   return processed;
 };
 
-const processMessageRequest = req => {
+const processMessageRequest = (req, type) => {
   const processed = {
     errors: [],
     parsed: {}
@@ -70,6 +70,10 @@ const processMessageRequest = req => {
   }
   if (req.params.index < 1 || req.params.num < 1) {
     processed.errors.push('Invalid index provided!');
+  }
+
+  if ((type === 'view' && typeof req.body.probability !== 'number') || (type === 'gauge' && !Array.isArray(req.body.probability))) {
+    processed.errors.push('Invalid datatype!');
   }
 
   try {
@@ -194,7 +198,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
 
 //Used to update a message attached to a gauge
 router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
-  const processed = processMessageRequest(req);
+  const processed = processMessageRequest(req, 'gauge');
 
   if (processed.errors.length > 0) {
     res.json({
@@ -207,7 +211,7 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
 });
 
 router.post('/:_id/gauges/:index/messages', (req, res) => {
-  const processed = processMessageRequest(req);
+  const processed = processMessageRequest(req, 'gauge');
 
   if (processed.errors.length > 0) {
     res.json({
@@ -229,7 +233,7 @@ router.post('/:_id/gauges/:index/messages', (req, res) => {
 });
 
 router.post('/:_id/messages', (req, res) => {
-  const processed = processMessageRequest(req);
+  const processed = processMessageRequest(req, 'view');
 
   if (processed.errors.length > 0) {
     res.json({
@@ -253,7 +257,7 @@ router.post('/:_id/messages', (req, res) => {
 
 //Used to update a message attached to a view
 router.post('/:_id/messages/:num', (req, res) => {
-  const processed = processMessageRequest(req);
+  const processed = processMessageRequest(req, 'view');
 
   if (processed.errors.length > 0) {
     res.json({
