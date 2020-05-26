@@ -95,7 +95,8 @@ const processMessageRequest = (req, type) => {
 const updateMessages = (id, path, req) => {
   return db.collection.updateOne(
     {
-      _id: new ObjectId(id)
+      _id: new ObjectId(id),
+      [path]: { $exists: true }
     },
     {
       $set: {
