@@ -59,7 +59,7 @@ const processCacheRequest = req => {
   return processed;
 };
 
-const processMessageRequest = (req, type) => {
+const processMessageRequest = (req) => {
   const processed = {
     errors: [],
     parsed: {}
@@ -72,10 +72,14 @@ const processMessageRequest = (req, type) => {
     processed.errors.push('Invalid index provided!');
   }
 
-  if ((type === 'view' && typeof req.body.probability !== 'number') || (type === 'gauge' && !Array.isArray(req.body.probability))) {
-    processed.errors.push('Invalid datatype!');
-  }
+  const isGauge = req.url.includes("gauges");
 
+  if (isGauge && !Array.isArray(req.body.probability)) {
+    processed.errors.push('Gauge message probability should be an array!');
+  } else if (!isGauge && typeof req.body.probability !== 'number') {
+    processed.errors.push('View message probability should be an integer!')
+  }
+  
   try {
     processed.parsed.text = req.body.text;
     processed.parsed.probability = req.body.probability;
@@ -199,7 +203,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
 
 //Used to update a message attached to a gauge
 router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
-  const processed = processMessageRequest(req, 'gauge');
+  const processed = processMessageRequest(req);
 
   if (processed.errors.length > 0) {
     res.json({
@@ -212,7 +216,7 @@ router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
 });
 
 router.post('/:_id/gauges/:index/messages', (req, res) => {
-  const processed = processMessageRequest(req, 'gauge');
+  const processed = processMessageRequest(req);
 
   if (processed.errors.length > 0) {
     res.json({
@@ -234,7 +238,7 @@ router.post('/:_id/gauges/:index/messages', (req, res) => {
 });
 
 router.post('/:_id/messages', (req, res) => {
-  const processed = processMessageRequest(req, 'view');
+  const processed = processMessageRequest(req);
 
   if (processed.errors.length > 0) {
     res.json({
@@ -258,7 +262,7 @@ router.post('/:_id/messages', (req, res) => {
 
 //Used to update a message attached to a view
 router.post('/:_id/messages/:num', (req, res) => {
-  const processed = processMessageRequest(req, 'view');
+  const processed = processMessageRequest(req);
 
   if (processed.errors.length > 0) {
     res.json({
