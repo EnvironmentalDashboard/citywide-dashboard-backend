@@ -15,3 +15,9 @@ Requests to the API should always be done with the header Content-Type set to
 `application/json`.
 In limited testing with `application/x-www-form-urlencoded`, ensuring data integrity
 became more difficult.
+
+## Testing Requests / Sample Requests
+
+Better documentation is a future goal.
+For now, contact @Sammidysam for a Postman set up for testing requests.
+These test requests provide an example of how requests should look.
