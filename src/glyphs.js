@@ -59,7 +59,7 @@ const processCacheRequest = req => {
   return processed;
 };
 
-const processMessageRequest = req => {
+const processMessageRequest = (req) => {
   const processed = {
     errors: [],
     parsed: {}
@@ -72,6 +72,14 @@ const processMessageRequest = req => {
     processed.errors.push('Invalid index provided!');
   }
 
+  const isGauge = req.url.includes("gauges");
+
+  if (isGauge && !Array.isArray(req.body.probability)) {
+    processed.errors.push('Gauge message probability should be an array!');
+  } else if (!isGauge && typeof req.body.probability !== 'number') {
+    processed.errors.push('View message probability should be an integer!')
+  }
+  
   try {
     processed.parsed.text = req.body.text;
     processed.parsed.probability = req.body.probability;
@@ -91,7 +99,8 @@ const processMessageRequest = req => {
 const updateMessages = (id, path, req) => {
   return db.collection.updateOne(
     {
-      _id: new ObjectId(id)
+      _id: new ObjectId(id),
+      [path]: { $exists: true }
     },
     {
       $set: {
