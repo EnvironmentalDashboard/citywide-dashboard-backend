@@ -25,3 +25,4 @@ These test requests provide an example of how requests should look.
 ## Development Caveats
 
 Note: only the `src` and `migrate` directories are bind-mounted.
+The NPM package files are also bind-mounted, but install new packages in the container.
