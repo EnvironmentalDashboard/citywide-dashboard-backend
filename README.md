@@ -21,3 +21,7 @@ became more difficult.
 Better documentation is a future goal.
 For now, contact @Sammidysam for a Postman set up for testing requests.
 These test requests provide an example of how requests should look.
+
+## Development Caveats
+
+Note: only the `src` and `migrate` directories are bind-mounted.
