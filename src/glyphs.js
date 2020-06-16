@@ -1,4 +1,7 @@
 const express = require('express');
+const formidable = require('express-formidable');
+const lineReader = require('line-reader');
+
 const router = express.Router();
 
 const ObjectId = require('mongodb').ObjectId;
@@ -79,7 +82,7 @@ const processMessageRequest = (req) => {
   } else if (!isGauge && typeof req.body.probability !== 'number') {
     processed.errors.push('View message probability should be an integer!')
   }
-  
+
   try {
     processed.parsed.text = req.body.text;
     processed.parsed.probability = req.body.probability;
@@ -90,11 +93,32 @@ const processMessageRequest = (req) => {
   }
 
   if (!req.body.pass || sha256(req.body.pass + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
-    processed.errors.push('Invalid password.')
+    processed.errors.push('Invalid password.');
   }
 
   return processed;
 };
+
+const processImportRequest = (req) => {
+  const processed = {
+    errors: []
+  };
+
+  if (!req.files[""]) {
+    processed.errors.push('No file provided!');
+  }
+
+  if (req.params.type !== "append" && req.params.type !== "overwrite") {
+    processed.errors.push('Invalid import type.');
+  }
+
+  if (!req.fields.pass || sha256(req.fields.pass + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+    processed.errors.push('Invalid password.');
+  }
+
+  return processed;
+
+}
 
 const updateMessages = (id, path, req) => {
   return db.collection.updateOne(
@@ -110,6 +134,61 @@ const updateMessages = (id, path, req) => {
     }
   )
 };
+
+const importMessages = (line) => {
+  const message = line.split(",");
+  const viewMessage = (message[1] === "Intro");
+
+  let path = "";
+  let newMessage = {"text": message[2]};
+
+  if (viewMessage) newMessage.probability = Number(message[3]);
+  else newMessage.probability = message.splice(3, 5).map(num => Number(num));
+
+  if (viewMessage) path = "view";
+  else path = `view.gauges.${message[1]}`;
+
+  return db.collection.updateOne(
+    {
+      "view.name": message[0].toLowerCase()
+    },
+    {
+      $addToSet: {
+        [`${path}.messages`]: newMessage
+      }
+    }
+  )
+}
+
+const overwriteMessages = (file) => {
+  let first = true;
+  let overwritten = [];
+
+  lineReader.eachLine(file, function(line) {
+    if (first) first = false;
+    else {
+      const message = line.split(",");
+      let path = "";
+
+      if (message[1] === "Intro") path = "view";
+      else path = `view.gauges.${message[1]}`;
+
+      if (!overwritten.includes(message[0] + path)) {
+        db.collection.updateOne(
+          {
+            "view.name": message[0].toLowerCase()
+          },
+          {
+            $set: {
+              [`${path}.messages`]: []
+            }
+          }
+        )
+        overwritten.push(message[0] + path);
+      }
+    }
+  });
+}
 
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
@@ -201,7 +280,7 @@ router.post('/:_id/gauges/:index/cache', (req, res) => {
   }
 });
 
-//Used to update a message attached to a gauge
+// Used to update a message attached to a gauge
 router.post('/:_id/gauges/:index/messages/:num', (req, res) => {
   const processed = processMessageRequest(req);
 
@@ -259,8 +338,7 @@ router.post('/:_id/messages', (req, res) => {
   }
 });
 
-
-//Used to update a message attached to a view
+// Used to update a message attached to a view
 router.post('/:_id/messages/:num', (req, res) => {
   const processed = processMessageRequest(req);
 
@@ -270,6 +348,28 @@ router.post('/:_id/messages/:num', (req, res) => {
     });
   } else {
     updateMessages(req.params._id, `view.messages.${req.params.num - 1}`, processed).then(result => res.json(result));
+  }
+});
+
+// This route is used to import messages from a spreadsheet (CSV)
+router.use(formidable()).post('/import/:type', (req, res) => {
+  const processed = processImportRequest(req);
+  let response = [];
+
+  if (processed.errors.length > 0) {
+    res.json({
+      'errors': processed.errors
+    });
+  } else {
+    if (req.params.type === "overwrite") overwriteMessages(req.files[""].path);
+
+    let first = true;
+    lineReader.eachLine(req.files[""].path, function(line) {
+      if (first) first = false;
+      else response.push(importMessages(line));
+    });
+
+    res.send(response)
   }
 });
 
