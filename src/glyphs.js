@@ -79,7 +79,7 @@ const processMessageRequest = (req) => {
   } else if (!isGauge && typeof req.body.probability !== 'number') {
     processed.errors.push('View message probability should be an integer!')
   }
-  
+
   try {
     processed.parsed.text = req.body.text;
     processed.parsed.probability = req.body.probability;
@@ -258,6 +258,18 @@ router.post('/:_id/messages', (req, res) => {
     .then(result => res.json(result));
   }
 });
+
+//delete a message is the router post parameters correct? 
+router.post('/:_id/messages/:delete'), (id, path) => {
+
+  const query = { _id: new ObjectId(id),
+                  [path]: { $exists: true }
+                };
+
+  itemsCollection.deleteOne(query)
+      .then(result => console.log(`Deleted ${result.deletedCount} item.`))
+      .catch(err => console.error(`Delete failed with error: ${err}`));
+}
 
 
 //Used to update a message attached to a view
