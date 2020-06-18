@@ -108,7 +108,7 @@ const processImportRequest = (req) => {
     processed.errors.push('No file provided!');
   }
 
-  if (req.params.type !== "append" && req.params.type !== "overwrite") {
+  if (req.fields.type !== "append" && req.fields.type !== "overwrite") {
     processed.errors.push('Invalid import type.');
   }
 
@@ -352,7 +352,7 @@ router.post('/:_id/messages/:num', (req, res) => {
 });
 
 // This route is used to import messages from a spreadsheet (CSV)
-router.use(formidable()).post('/import/:type', (req, res) => {
+router.use(formidable()).post('/import/', (req, res) => {
   const processed = processImportRequest(req);
   let response = [];
 
@@ -361,7 +361,7 @@ router.use(formidable()).post('/import/:type', (req, res) => {
       'errors': processed.errors
     });
   } else {
-    if (req.params.type === "overwrite") overwriteMessages(req.files[""].path);
+    if (req.fields.type === "overwrite") overwriteMessages(req.files[""].path);
 
     let first = true;
     lineReader.eachLine(req.files[""].path, function(line) {
