@@ -259,19 +259,6 @@ router.post('/:_id/messages', (req, res) => {
   }
 });
 
-//delete a message is the router post parameters correct? 
-router.post('/:_id/messages/:delete'), (id, path) => {
-
-  const query = { _id: new ObjectId(id),
-                  [path]: { $exists: true }
-                };
-
-  itemsCollection.deleteOne(query)
-      .then(result => console.log(`Deleted ${result.deletedCount} item.`))
-      .catch(err => console.error(`Delete failed with error: ${err}`));
-}
-
-
 //Used to update a message attached to a view
 router.post('/:_id/messages/:num', (req, res) => {
   const processed = processMessageRequest(req);
@@ -284,5 +271,40 @@ router.post('/:_id/messages/:num', (req, res) => {
     updateMessages(req.params._id, `view.messages.${req.params.num - 1}`, processed).then(result => res.json(result));
   }
 });
+
+//Used to delete a message attached to a gauge
+/*router.delete('/:_id/deleteMessageFromGauge', req, res) => {
+  const proccessed = processMessageRequest(req);
+
+  if (process.errors.length > 0) {
+    res.json({
+      'errors' : processed.errors
+    });
+  } else {
+   try {
+     db.collection.deleteOne(
+       { "_id" : new ObjectID(req.params_id),
+     );
+   }
+  }
+}*/
+
+//Used to delete a message attachd to a view
+router.delete('/:_id/deleteMessageFromView', (req, res) => {
+    //process the incoming request
+    const processed = processMessageRequest(req);
+    if (processed.errors.length > 0) {
+      res.json({
+        'errors' : processed.errors
+      });
+    }
+    try {
+      db.collection.deleteOne(
+       { "_id" : new ObjectId(req.params_id) }
+      );
+      } catch (e) {
+            print (e);
+      }
+  });
 
 module.exports = router;
