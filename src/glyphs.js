@@ -9,6 +9,8 @@ const ObjectId = require('mongodb').ObjectId;
 const db = require('./db');
 
 const sha256 = require('js-sha256');
+const salt = "719GxFYNgo";
+const pass = "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139";
 
 const getGlyphById = id => (
   db.collection.findOne({
@@ -92,7 +94,7 @@ const processMessageRequest = (req) => {
     }
   }
 
-  if (!req.body.pass || sha256(req.body.pass + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+  if (!req.body.pass || sha256(req.body.pass + salt) !== pass) {
     processed.errors.push('Invalid password.');
   }
 
@@ -112,7 +114,7 @@ const processImportRequest = (req) => {
     processed.errors.push('Invalid import type.');
   }
 
-  if (!req.fields.pass || sha256(req.fields.pass + "719GxFYNgo") !== "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139") {
+  if (!req.fields.pass || sha256(req.fields.pass + salt) !== pass) {
     processed.errors.push('Invalid password.');
   }
 
@@ -135,18 +137,18 @@ const updateMessages = (id, path, req) => {
   )
 };
 
+/* Constant for what the name in the "gauge" field of the messages spreadsheet
+* should be when creating a message attached to a view.
+*/
+const viewPath = "Intro"
+
 const importMessages = (line) => {
   const message = line.split(",");
-  const viewMessage = (message[1] === "Intro");
+  const viewMessage = (message[1] === viewPath);
 
-  let path = "";
-  let newMessage = {"text": message[2]};
+  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
 
-  if (viewMessage) newMessage.probability = Number(message[3]);
-  else newMessage.probability = message.splice(3, 5).map(num => Number(num));
-
-  if (viewMessage) path = "view";
-  else path = `view.gauges.${message[1]}`;
+  const path = (viewMessage) ? "view":`view.gauges.${message[1]}`;
 
   return db.collection.updateOne(
     {
@@ -160,18 +162,15 @@ const importMessages = (line) => {
   )
 }
 
-const overwriteMessages = (file) => {
-  let first = true;
+const clearMessages = (file, headers) => {
   let overwritten = [];
 
   lineReader.eachLine(file, function(line) {
-    if (first) first = false;
+    if (headers) headers = false;
     else {
       const message = line.split(",");
-      let path = "";
 
-      if (message[1] === "Intro") path = "view";
-      else path = `view.gauges.${message[1]}`;
+      const path = (viewMessage) ? "view":`view.gauges.${message[1]}`;
 
       if (!overwritten.includes(message[0] + path)) {
         db.collection.updateOne(
@@ -184,7 +183,7 @@ const overwriteMessages = (file) => {
             }
           }
         )
-        overwritten.push(message[0] + path);
+        overwritten.push(message[0].toLowerCase() + path);
       }
     }
   });
@@ -352,8 +351,10 @@ router.post('/:_id/messages/:num', (req, res) => {
 });
 
 // This route is used to import messages from a spreadsheet (CSV)
-router.use(formidable()).post('/import/', (req, res) => {
+router.use(formidable()).post('/import', (req, res) => {
   const processed = processImportRequest(req);
+  const headers = (req.fields.headers) ? req.fields.headers:true;
+
   let response = [];
 
   if (processed.errors.length > 0) {
@@ -361,7 +362,7 @@ router.use(formidable()).post('/import/', (req, res) => {
       'errors': processed.errors
     });
   } else {
-    if (req.fields.type === "overwrite") overwriteMessages(req.files[""].path);
+    if (req.fields.type === "overwrite") clearMessages(req.files[""].path);
 
     let first = true;
     lineReader.eachLine(req.files[""].path, function(line) {
