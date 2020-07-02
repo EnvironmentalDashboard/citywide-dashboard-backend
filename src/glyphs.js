@@ -148,7 +148,7 @@ const importMessages = (line) => {
 
   const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
 
-  const path = (viewMessage) ? "view":`view.gauges.${message[1]}`;
+  const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
 
   return db.collection.updateOne(
     {
@@ -169,8 +169,9 @@ const clearMessages = (file, headers) => {
     if (headers) headers = false;
     else {
       const message = line.split(",");
+      const viewMessage = (message[1] === viewPath);
 
-      const path = (viewMessage) ? "view":`view.gauges.${message[1]}`;
+      const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
 
       if (!overwritten.includes(message[0] + path)) {
         db.collection.updateOne(
