@@ -12,6 +12,8 @@ const sha256 = require('js-sha256');
 const salt = "719GxFYNgo";
 const pass = "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139";
 
+var metadata_fields = [];
+
 const getGlyphById = id => (
   db.collection.findOne({
     _id: new ObjectId(id)
@@ -146,10 +148,24 @@ const importMessages = (line) => {
   const message = line.split(",");
   const viewMessage = (message[1] === viewPath);
 
+  const metadata = (viewMessage) ? message.splice(0,3):message.splice(0,5);
   const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
-
   const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
 
+  if (metadata_fields && metadata) {
+    for (var i=0; i<metadata_fields.length; ++i) {
+      db.collection.update(
+        {
+          "view.name": message[0].toLowerCase()
+        },
+        {
+          $addToSet: {
+            [`${path}.messages.metadata`]: { `${metadata_fields[i]}` : `${metadata[i]}` }
+          }
+        }
+      )
+    }
+  }
   return db.collection.updateOne(
     {
       "view.name": message[0].toLowerCase()
@@ -364,10 +380,13 @@ router.use(formidable()).post('/import', (req, res) => {
     });
   } else {
     if (req.fields.type === "overwrite") clearMessages(req.files[""].path);
-
+    const metaHeaders = [];
     let first = true;
     lineReader.eachLine(req.files[""].path, function(line) {
-      if (first) first = false;
+      if (first) {
+        metadata_fields = line.split(",").splice(0,4);  // set the global variable to the metadata fields that appear on the first line
+        first = false;
+      }
       else response.push(importMessages(line));
     });
 
