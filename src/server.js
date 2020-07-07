@@ -32,4 +32,6 @@ Object.keys(routers).forEach(k => {
   server.use(`${PATH}${k}`, routers[k]);
 });
 
+server.get('/check', (req, res) => res.sendStatus(200));
+
 server.listen(PORT, () => console.log(`Listening on port ${PORT}`));
