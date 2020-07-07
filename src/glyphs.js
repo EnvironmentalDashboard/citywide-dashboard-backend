@@ -12,8 +12,6 @@ const sha256 = require('js-sha256');
 const salt = "719GxFYNgo";
 const pass = "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139";
 
-var metadata_fields = [];
-
 const getGlyphById = id => (
   db.collection.findOne({
     _id: new ObjectId(id)
@@ -144,28 +142,23 @@ const updateMessages = (id, path, req) => {
 */
 const viewPath = "Intro"
 
-const importMessages = (line) => {
+const importMessages = (line, metaTypes) => {
   const message = line.split(",");
   const viewMessage = (message[1] === viewPath);
 
-  const metadata = (viewMessage) ? message.splice(0,3):message.splice(0,5);
   const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
+  if (metaTypes && metaTypes.length) newMessage = {...newMessage, "metadata" : []};           //Make a field in the message object for metadata only if metadata exists
   const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
 
-  if (metadata_fields && metadata) {
-    for (var i=0; i<metadata_fields.length; ++i) {
-      db.collection.update(
-        {
-          "view.name": message[0].toLowerCase()
-        },
-        {
-          $addToSet: {
-            [`${path}.messages.metadata`]: { `${metadata_fields[i]}` : `${metadata[i]}` }
-          }
-        }
-      )
-    }
+  const metaText = (viewMessage) ? message.splice(0,3):message.splice(0,5);
+
+  const metaArray = {}
+  for (let i=0; i<metadata.length; i++) {
+    metaArray.push({`${metaTypes[i]}` : `${metaText[i]}`});
   }
+
+  newMessage.metadata = metaArray;
+
   return db.collection.updateOne(
     {
       "view.name": message[0].toLowerCase()
@@ -371,26 +364,24 @@ router.post('/:_id/messages/:num', (req, res) => {
 router.use(formidable()).post('/import', (req, res) => {
   const processed = processImportRequest(req);
   const headers = (req.fields.headers) ? req.fields.headers:true;
-
+  res.send("Hello!!!!");
   let response = [];
-
   if (processed.errors.length > 0) {
     res.json({
       'errors': processed.errors
     });
   } else {
     if (req.fields.type === "overwrite") clearMessages(req.files[""].path);
-    const metaHeaders = [];
     let first = true;
+    const metadataFields = [];
     lineReader.eachLine(req.files[""].path, function(line) {
       if (first) {
-        metadata_fields = line.split(",").splice(0,4);  // set the global variable to the metadata fields that appear on the first line
+        metadataFields = line.split(",").splice(0,4);  //View name, Guage index, Probability(1 or 5), Metadata...
         first = false;
       }
-      else response.push(importMessages(line));
+      else response.push(importMessages(line, metadataFields));
     });
-
-    res.send(response)
+    res.send(response);
   }
 });
 
