@@ -1,7 +1,9 @@
 const express = require('express');
 const server = express();
 const bodyParser = require('body-parser');
+
 const PORT = 80;
+const PATH = process.env.PATH_PREFIX ? `/${process.env.PATH_PREFIX}` : '';
 
 const DEVELOPMENT = 0;
 const ENVIRONMENT = DEVELOPMENT;
@@ -27,7 +29,7 @@ if (ENVIRONMENT === DEVELOPMENT) {
 }
 
 Object.keys(routers).forEach(k => {
-  server.use(k, routers[k]);
+  server.use(`${PATH}${k}`, routers[k]);
 });
 
 server.listen(PORT, () => console.log(`Listening on port ${PORT}`));
