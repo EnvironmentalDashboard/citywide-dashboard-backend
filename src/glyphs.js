@@ -140,26 +140,35 @@ const updateMessages = (id, path, req) => {
 /* Constant for what the name in the "gauge" field of the messages spreadsheet
 * should be when creating a message attached to a view.
 */
-const viewPath = "Intro"
+const viewPath = "intro"
 
 const importMessages = (line) => {
   const message = line.split(",");
   const viewMessage = (message[1] === viewPath);
 
+
   const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
 
   const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
 
-  return db.collection.updateOne(
-    {
-      "view.name": message[0].toLowerCase()
-    },
-    {
+  //Not a big fan of how this works but unsure how to handle if it's an "Intro" message
+  if (path == "view") {
+      return db.collection.updateOne({
+          "view.name": message[0].toLowerCase()
+      },
+      {
+        $addToSet: {
+          [`${path}.messages`]: newMessage
+        }
+      })
+  } else return db.collection.updateOne({
+      "view.gauges.name": message[1].toLowerCase();
+      },
+      {
       $addToSet: {
-        [`${path}.messages`]: newMessage
+        "view.$.message": newMessage
       }
-    }
-  )
+  })
 }
 
 const clearMessages = (file, headers) => {
