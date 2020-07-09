@@ -143,7 +143,7 @@ const updateMessages = (id, path, req) => {
 const viewPath = "Intro"
 
 const importMessages = (line) => {
-  const message = line.split(",");
+  const message = line.split("\t");
   const viewMessage = (message[1] === viewPath);
 
   const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
@@ -168,7 +168,7 @@ const clearMessages = (file, headers) => {
   lineReader.eachLine(file, function(line) {
     if (headers) headers = false;
     else {
-      const message = line.split(",");
+      const message = line.split("\t");
       const viewMessage = (message[1] === viewPath);
 
       const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
