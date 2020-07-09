@@ -144,11 +144,18 @@ const viewPath = "Intro"
 
 const importMessages = (line) => {
   const message = line.split("\t");
+
+  if (message.length !== 4 && message.length !== 8)
+    return 'error';
+
   const viewMessage = (message[1] === viewPath);
 
-  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
+  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]) : message.splice(3, 5).map(num => Number(num))};
 
   const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
+
+  if (path.match(/\u0000/g))
+    return 'error';
 
   return db.collection.updateOne(
     {
@@ -169,9 +176,16 @@ const clearMessages = (file, headers) => {
     if (headers) headers = false;
     else {
       const message = line.split("\t");
+
+      if (message.length !== 4 && message.length !== 8)
+        return 'error';
+
       const viewMessage = (message[1] === viewPath);
 
       const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
+
+      if (path.match(/\u0000/g))
+        return 'error';
 
       if (!overwritten.includes(message[0] + path)) {
         db.collection.updateOne(
@@ -369,9 +383,9 @@ router.use(formidable()).post('/import', (req, res) => {
     lineReader.eachLine(req.files[""].path, function(line) {
       if (first) first = false;
       else response.push(importMessages(line));
+    }, function (err) {
+      res.send(response.includes('error') ? { errors: ['Could not import file.'] } : response);
     });
-
-    res.send(response)
   }
 });
 
