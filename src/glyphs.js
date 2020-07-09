@@ -143,7 +143,7 @@ const updateMessages = (id, path, req) => {
 const viewPath = "Intro"
 
 const importMessages = (line) => {
-  const message = line.split(",");
+  const message = line.split("\t");
 
   if (message.length !== 4 && message.length !== 8)
     return 'error';
@@ -175,7 +175,7 @@ const clearMessages = (file, headers) => {
   lineReader.eachLine(file, function(line) {
     if (headers) headers = false;
     else {
-      const message = line.split(",");
+      const message = line.split("\t");
 
       if (message.length !== 4 && message.length !== 8)
         return 'error';
