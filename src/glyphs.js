@@ -154,21 +154,22 @@ const importMessages = (line) => {
   //Not a big fan of how this works but unsure how to handle if it's an "Intro" message
   if (path == "view") {
       return db.collection.updateOne({
-          "view.name": message[0].toLowerCase()
+          "view.gauges.name": message[0].toLowerCase()
       },
       {
         $addToSet: {
           [`${path}.messages`]: newMessage
         }
-      })
-  } else return db.collection.updateOne({
-      "view.gauges.name": message[1].toLowerCase();
-      },
-      {
-      $addToSet: {
-        "view.$.message": newMessage
-      }
-  })
+      });
+  }
+  return db.collection.updateOne({
+      "view.gauges.name": message[0].toLowerCase()
+  },
+  {
+    $addToSet: {
+      "view.gauges.$.message" : newMessage
+    }
+  });
 }
 
 const clearMessages = (file, headers) => {
