@@ -152,9 +152,9 @@ const importMessages = (line, metaTypes) => {
 
   const metaText = (viewMessage) ? message.splice(0,3):message.splice(0,5);
 
-  const metaArray = {}
+  const metaArray = {};
   for (let i=0; i<metadata.length; i++) {
-    metaArray.push({`${metaTypes[i]}` : `${metaText[i]}`});
+    metaArray[metaTypes[i]] = metaText[i];
   }
 
   newMessage.metadata = metaArray;
@@ -364,7 +364,6 @@ router.post('/:_id/messages/:num', (req, res) => {
 router.use(formidable()).post('/import', (req, res) => {
   const processed = processImportRequest(req);
   const headers = (req.fields.headers) ? req.fields.headers:true;
-  res.send("Hello!!!!");
   let response = [];
   if (processed.errors.length > 0) {
     res.json({
