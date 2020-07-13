@@ -60,4 +60,4 @@ const run = collection => {
   });
 }
 
-module.exports { canRun, run };
+module.exports = { canRun, run };
