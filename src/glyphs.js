@@ -158,14 +158,14 @@ const importMessages = (line) => {
 
   const query = (path === "view") ? {"view.name" : messages[0].toLowerCase()} : {"view.gauges.name": message[1].toLowerCase()};
 
-  const insert = (path === "view") ? {[`${path}.messages`]: newMessage} : {"view.gauges.$.messages" : newMessage};
+  const insertion = (path === "view") ? {[`${path}.messages`]: newMessage} : {"view.gauges.$.messages" : newMessage};
 
   if (path.match(/\u0000/g))
     return errorString;
 
   return db.collection.updateOne(query,
     {
-      $addToSet: insert
+      $addToSet: insertion
     }
   )
 }
