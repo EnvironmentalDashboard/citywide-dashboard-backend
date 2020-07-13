@@ -1,7 +1,7 @@
 const qs = require('querystring');
 
 const urltoGaugeName = url => {
-  return qs.decode(url).title.toLowerCase();
+  return qs.decode(url).title();
 }
 
 
@@ -60,4 +60,4 @@ const run = collection => {
   });
 }
 
-module.exports = { canRun, run };
+module.exports { canRun, run };
