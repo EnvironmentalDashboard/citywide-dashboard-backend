@@ -143,33 +143,29 @@ const updateMessages = (id, path, req) => {
 const viewPath = "intro"
 
 const importMessages = (line) => {
-  const message = line.split(",");
+  const message = line.split("\t");
+
+  if (message.length !== 4 && message.length !== 8)
+    return 'error';
+
   const viewMessage = (message[1] === viewPath);
 
-
-  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
+  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]) : message.splice(3, 5).map(num => Number(num))};
 
   const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
 
-  //Not a big fan of how this works but unsure how to handle if it's an "Intro" message
-  if (path == "view") {
-      return db.collection.updateOne({
-          "view.name": message[0].toLowerCase()
-      },
-      {
-        $addToSet: {
-          [`${path}.messages`]: newMessage
-        }
-      });
-  }
-  return db.collection.updateOne({
-      "view.gauges.name": message[0].toLowerCase()
-  },
-  {
-    $addToSet: {
-      "view.gauges.$.message" : newMessage
+  const query = (path === "view") ? {"view.name" : messages[0].toLowerCase()} : {"view.gauges.name": message[1].toLowerCase()};
+
+  const insert = (path === "view") ? {[`${path}.messages`]: newMessage} : {"view.gauges.$.message" : newMessage};
+
+  if (path.match(/\u0000/g))
+    return 'error';
+
+  return db.collection.updateOne(query,
+    {
+      $addToSet: insert
     }
-  });
+  )
 }
 
 const clearMessages = (file, headers) => {

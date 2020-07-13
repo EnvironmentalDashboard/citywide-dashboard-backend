@@ -1,12 +1,7 @@
 const qs = require('querystring');
 
 const urltoGaugeName = url => {
-  if (!url) return url;
-  else {
-    const parsed = JSON.parse(JSON.stringify(qs.decode(url)));
-
-    return parsed.title.toLowerCase();
-  }
+  return qs.decode(url).title.toLowerCase();
 }
 
 

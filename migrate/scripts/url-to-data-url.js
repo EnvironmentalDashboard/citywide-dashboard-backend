@@ -10,7 +10,7 @@ const urlToDataUrl = url => {
   }
 };
 
-const canRun = collection => {
+const canRun = collection => (
   new Promise((resolve, reject) => {
     collection.find({
       'view': {
@@ -27,7 +27,7 @@ const canRun = collection => {
       resolve(gauges.map(e => e.some(g => g.url && !g.data_url)).some(e => e));
     });
   })
-};
+);
 
 const run = collection => {
   collection.find({
