@@ -11,6 +11,8 @@ const db = require('./db');
 const sha256 = require('js-sha256');
 const salt = "719GxFYNgo";
 const pass = "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139";
+const fieldSeperator = "\t";
+const errorString = 'error';
 
 const getGlyphById = id => (
   db.collection.findOne({
@@ -143,10 +145,10 @@ const updateMessages = (id, path, req) => {
 const viewPath = "intro"
 
 const importMessages = (line) => {
-  const message = line.split("\t");
+  const message = line.split(fieldSeperator);
 
   if (message.length !== 4 && message.length !== 8)
-    return 'error';
+    return errorString;
 
   const viewMessage = (message[1] === viewPath);
 
@@ -156,10 +158,10 @@ const importMessages = (line) => {
 
   const query = (path === "view") ? {"view.name" : messages[0].toLowerCase()} : {"view.gauges.name": message[1].toLowerCase()};
 
-  const insert = (path === "view") ? {[`${path}.messages`]: newMessage} : {"view.gauges.$.message" : newMessage};
+  const insert = (path === "view") ? {[`${path}.messages`]: newMessage} : {"view.gauges.$.messages" : newMessage};
 
   if (path.match(/\u0000/g))
-    return 'error';
+    return errorString;
 
   return db.collection.updateOne(query,
     {
