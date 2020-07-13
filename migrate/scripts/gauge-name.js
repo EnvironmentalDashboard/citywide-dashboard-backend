@@ -5,7 +5,7 @@ const urltoGaugeName = url => {
 }
 
 
-const canRun = collection => {
+const canRun = collection => (
   new Promise((resolve, reject) => {
     collection.find({
       'view' : { $exists: true }
@@ -19,7 +19,7 @@ const canRun = collection => {
       resolve(gauges.map(e => e.some(g => g.url && !g.name)).some(e => e));
     });
   })
-};
+);
 
 const run = collection => {
   collection.find({
