@@ -259,18 +259,33 @@ router.post('/:_id/messages', (req, res) => {
   }
 });
 
-//delete a message is the router post parameters correct? 
-router.post('/:_id/messages/:delete'), (id, path) => {
+//Used to delete a message attached to a view
+router.post('/:_id/messages/:num/delete', (req, res) => {
+  db.collection.updateOne(
+    {
+      _id: new ObjectId(req.params._id)
+    },
+    {
+      $unset: {
+          [`view.messages.${req.params.num - 1}`] : ""
+      }
+    }
+  ).then(result => res.json(result));
+});
 
-  const query = { _id: new ObjectId(id),
-                  [path]: { $exists: true }
-                };
-
-  itemsCollection.deleteOne(query)
-      .then(result => console.log(`Deleted ${result.deletedCount} item.`))
-      .catch(err => console.error(`Delete failed with error: ${err}`));
-}
-
+//Used to delete a message attached to gauge
+router.post('/:_id/gauges/:index/messages/:num/delete', (req, res) => {
+  db.collection.updateOne(
+    {
+      _id: new ObjectId(req.params._id)
+    },
+    {
+      $unset: {
+          [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`] : ""
+      }
+    }
+  ).then(result => res.json(result));
+});
 
 //Used to update a message attached to a view
 router.post('/:_id/messages/:num', (req, res) => {
