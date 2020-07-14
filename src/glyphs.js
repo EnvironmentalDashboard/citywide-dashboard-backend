@@ -156,7 +156,7 @@ const importMessages = (line) => {
 
   const path = (viewMessage) ? "view" : "view.gauges.$";
 
-  const query = (path === "view") ? {"view.name" : messages[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(messages[1], "i") } } 
+  const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } } 
 
   if (path.match(/\u0000/g))
     return ERROR_STRING;
