@@ -156,7 +156,7 @@ const importMessages = (line) => {
 
   const path = (viewMessage) ? "view" : "view.gauges.$";
 
-  const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } } 
+  const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } }
 
   if (path.match(/\u0000/g))
     return ERROR_STRING;
@@ -176,10 +176,17 @@ const clearMessages = (file, headers) => {
   lineReader.eachLine(file, function(line) {
     if (headers) headers = false;
     else {
-      const message = line.split(",");
+      const message = line.split("\t");
+
+      if (message.length !== 4 && message.length !== 8)
+        return 'error';
+
       const viewMessage = (message[1] === viewPath);
 
       const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
+
+      if (path.match(/\u0000/g))
+        return 'error';
 
       if (!overwritten.includes(message[0] + path)) {
         db.collection.updateOne(
@@ -377,9 +384,9 @@ router.use(formidable()).post('/import', (req, res) => {
     lineReader.eachLine(req.files[""].path, function(line) {
       if (first) first = false;
       else response.push(importMessages(line));
+    }, function (err) {
+      res.send(response.includes('error') ? { errors: ['Could not import file.'] } : response);
     });
-
-    res.send(response)
   }
 });
 
