@@ -23,14 +23,14 @@ const getGlyphById = id => (
 const getGlyphGaugesById = id => (
   getGlyphById(id)
   .then(result => (
-    result.view ? result.view.gauges : []
+    result.view.gauges ? result.view.gauges : []
   ))
 );
 
 const getGlyphMessagesById = id => (
   getGlyphById(id)
   .then(result => (
-    result.view ? result.view.messages : []
+    result.view.messages ? result.view.messages : []
   ))
 );
 
