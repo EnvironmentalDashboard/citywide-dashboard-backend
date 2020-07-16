@@ -4,7 +4,6 @@ const urltoGaugeName = url => {
   return qs.decode(url).title();
 }
 
-
 const canRun = collection => (
   new Promise((resolve, reject) => {
     collection.find({
@@ -60,4 +59,4 @@ const run = collection => {
   });
 }
 
-module.exports { canRun, run };
+module.exports = { canRun, run };
