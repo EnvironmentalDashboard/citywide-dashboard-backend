@@ -23,7 +23,7 @@ const getGlyphById = id => (
 const getGlyphGaugesById = id => (
   getGlyphById(id)
   .then(result => (
-    result.view.gauges ? result.view.gauges : []
+    (result.view && result.view.gauges) ? result.view.gauges : []
   ))
 );
 
