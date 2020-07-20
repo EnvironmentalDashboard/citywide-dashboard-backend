@@ -146,10 +146,6 @@ const importMessages = (line, metaTypes) => {
   const message = line.split(",");
   const viewMessage = (message[1] === viewPath);
 
-  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
-  if (metaTypes && metaTypes.length) newMessage = {...newMessage, "metadata" : []};           //Make a field in the message object for metadata only if metadata exists
-  const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
-
   const metaText = (viewMessage) ? message.splice(0,3):message.splice(0,5);
 
   const metaArray = {};
@@ -157,7 +153,11 @@ const importMessages = (line, metaTypes) => {
     metaArray[metaTypes[i]] = metaText[i];
   }
 
-  newMessage.metadata = metaArray;
+  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
+
+  if (metaTypes) newMessage = {...newMessage, "metadata" : metaArray}; //Make a field in the message object for metadata only if metadata exists
+
+  const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
 
   return db.collection.updateOne(
     {
