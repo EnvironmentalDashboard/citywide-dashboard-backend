@@ -11,6 +11,8 @@ const db = require('./db');
 const sha256 = require('js-sha256');
 const salt = "719GxFYNgo";
 const pass = "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139";
+const FIELD_SEPERATOR = "\t";
+const ERROR_STRING = 'error';
 
 const getGlyphById = id => (
   db.collection.findOne({
@@ -140,11 +142,13 @@ const updateMessages = (id, path, req) => {
 /* Constant for what the name in the "gauge" field of the messages spreadsheet
 * should be when creating a message attached to a view.
 */
-const viewPath = "Intro"
+const viewPath = "intro"
 
-const importMessages = (line, metaTypes) => {
-  const message = line.split(",");
-  const viewMessage = (message[1] === viewPath);
+const importMessages = (line) => {
+  const message = line.split(FIELD_SEPERATOR);
+
+  if (message.length !== 4 && message.length !== 8)
+    return ERROR_STRING;
 
   const metaText = (viewMessage) ? message.splice(0,3):message.splice(0,5);
 
@@ -155,17 +159,23 @@ const importMessages = (line, metaTypes) => {
 
   const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
 
-  if (metaTypes) newMessage = {...newMessage, "metadata" : metaArray}; //Make a field in the message object for metadata only if metadata exists
+  if (metaTypes) newMessage = {...newMessage, "metadata" : metaArray};
 
-  const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
+  const viewMessage = (message[1] === viewPath);
 
-  return db.collection.updateOne(
-    {
-      "view.name": message[0].toLowerCase()
-    },
+  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]) : message.splice(3, 5).map(num => Number(num))};
+
+  const path = (viewMessage) ? "view" : "view.gauges.$";
+
+  const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } }
+
+  if (path.match(/\u0000/g))
+    return ERROR_STRING;
+
+  return db.collection.updateOne(query,
     {
       $addToSet: {
-        [`${path}.messages`]: newMessage
+        [`${path}.messages`] : newMessage
       }
     }
   )
@@ -177,10 +187,17 @@ const clearMessages = (file, headers) => {
   lineReader.eachLine(file, function(line) {
     if (headers) headers = false;
     else {
-      const message = line.split(",");
+      const message = line.split("\t");
+
+      if (message.length !== 4 && message.length !== 8)
+        return ERROR_STRING;
+
       const viewMessage = (message[1] === viewPath);
 
       const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
+
+      if (path.match(/\u0000/g))
+        return ERROR_STRING;
 
       if (!overwritten.includes(message[0] + path)) {
         db.collection.updateOne(
