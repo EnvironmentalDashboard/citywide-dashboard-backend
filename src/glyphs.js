@@ -190,7 +190,7 @@ const clearMessages = (file, headers) => {
       if (path.match(/\u0000/g))
         return ERROR_STRING;
 
-      if (!overwritten.includes(message[1])) {
+      if (!overwritten.includes(message[0] + message[1])) {
         db.collection.updateOne(query,
           {
             $set: {
@@ -198,7 +198,7 @@ const clearMessages = (file, headers) => {
             }
           }
         )
-        overwritten.push(message[1]);
+        overwritten.push(message[0] + message[1]);
       }
     }
   });
