@@ -149,8 +149,8 @@ const importMessages = (line, metaTypes) => {
 
   const viewMessage = (message[1] === viewPath);
 
-  if (message.length < 9)
-    return 'ERORR_STRING';
+  if (message.length < 8)
+    return ERROR_STRING;
 
   let metaText = [];
   for (let i=8; i<message.length; ++i) {
@@ -193,7 +193,7 @@ const clearMessages = (file, headers) => {
 
       const viewMessage = (message[1] === viewPath);
 
-      if (message.length < 9)
+      if (message.length < 8)
         return ERROR_STRING;
 
       const path = (viewMessage) ? "view" : "view.gauges.$";
