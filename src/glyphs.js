@@ -192,23 +192,22 @@ const clearMessages = (file, headers) => {
 
       const viewMessage = (message[1] === viewPath);
 
-      const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
+      const path = (viewMessage) ? "view" : "view.gauges.$";
+
+      const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } }
 
       if (path.match(/\u0000/g))
         return ERROR_STRING;
 
-      if (!overwritten.includes(message[0] + path)) {
-        db.collection.updateOne(
-          {
-            "view.name": message[0].toLowerCase()
-          },
+      if (!overwritten.includes(message[0] + message[1])) {
+        db.collection.updateOne(query,
           {
             $set: {
               [`${path}.messages`]: []
             }
           }
         )
-        overwritten.push(message[0].toLowerCase() + path);
+        overwritten.push(message[0] + message[1]);
       }
     }
   });
