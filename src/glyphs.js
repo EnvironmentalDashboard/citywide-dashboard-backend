@@ -144,26 +144,24 @@ const updateMessages = (id, path, req) => {
 */
 const viewPath = "intro"
 
-const importMessages = (line) => {
+const importMessages = (line, metaTypes) => {
   const message = line.split(FIELD_SEPERATOR);
 
-  if (message.length !== 4 && message.length !== 8)
+  if (message.length !== 4 && message.length !== 8)ta
     return ERROR_STRING;
 
   const metaText = (viewMessage) ? message.splice(0,3):message.splice(0,5);
 
-  const metaArray = {};
-  for (let i=0; i<metadata.length; i++) {
+  let metaArray = {};
+  for (let i=0; i<metaTypes.length; i++) {
     metaArray[metaTypes[i]] = metaText[i];
   }
 
   const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
 
-  if (metaTypes) newMessage = {...newMessage, "metadata" : metaArray};
+  if (metaTypes.length > 0) newMessage = {...newMessage, "metadata" : metaArray};
 
   const viewMessage = (message[1] === viewPath);
-
-  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]) : message.splice(3, 5).map(num => Number(num))};
 
   const path = (viewMessage) ? "view" : "view.gauges.$";
 
@@ -389,7 +387,7 @@ router.use(formidable()).post('/import', (req, res) => {
   } else {
     if (req.fields.type === "overwrite") clearMessages(req.files[""].path);
     let first = true;
-    const metadataFields = [];
+    let metadataFields = [];
     lineReader.eachLine(req.files[""].path, function(line) {
       if (first) {
         metadataFields = line.split(",").splice(0,4);  //View name, Guage index, Probability(1 or 5), Metadata...
