@@ -147,21 +147,25 @@ const viewPath = "intro"
 const importMessages = (line, metaTypes) => {
   const message = line.split(FIELD_SEPERATOR);
 
-  if (message.length !== 4 && message.length !== 8)ta
-    return ERROR_STRING;
+  const viewMessage = (message[1] === viewPath);
 
-  const metaText = (viewMessage) ? message.splice(0,3):message.splice(0,5);
+  if (message.length < 9)
+    return 'ERORR_STRING';
+
+  let metaText = [];
+  for (let i=8; i<message.length; ++i) {
+    if (message[i] != '') metaText.push(message[i]);
+  }
 
   let metaArray = {};
   for (let i=0; i<metaTypes.length; i++) {
-    metaArray[metaTypes[i]] = metaText[i];
+    if (metaText[i])
+      metaArray[metaTypes[i]] = metaText[i];
   }
 
-  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
+  let newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
 
-  if (metaTypes.length > 0) newMessage = {...newMessage, "metadata" : metaArray};
-
-  const viewMessage = (message[1] === viewPath);
+  if (metaTypes.length > 0 &&  metaText.length > 0) newMessage = {...newMessage, "metadata" : metaArray};
 
   const path = (viewMessage) ? "view" : "view.gauges.$";
 
@@ -187,10 +191,10 @@ const clearMessages = (file, headers) => {
     else {
       const message = line.split("\t");
 
-      if (message.length !== 4 && message.length !== 8)
-        return ERROR_STRING;
-
       const viewMessage = (message[1] === viewPath);
+
+      if (message.length < 9)
+        return ERROR_STRING;
 
       const path = (viewMessage) ? "view" : "view.gauges.$";
 
@@ -389,10 +393,11 @@ router.use(formidable()).post('/import', (req, res) => {
     let metadataFields = [];
     lineReader.eachLine(req.files[""].path, function(line) {
       if (first) {
-        metadataFields = line.split(",").splice(0,4);  //View name, Guage index, Probability(1 or 5), Metadata...
+        metadataFields = line.split(FIELD_SEPERATOR).splice(8);
         first = false;
       }
-      else response.push(importMessages(line, metadataFields));
+      else {
+        response.push(importMessages(line, metadataFields))};
     });
     res.send(response);
   }
