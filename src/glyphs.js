@@ -13,6 +13,7 @@ const salt = "719GxFYNgo";
 const pass = "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139";
 const FIELD_SEPERATOR = "\t";
 const ERROR_STRING = 'error';
+const METADATA_START_INDEX = 8;
 
 const getGlyphById = id => (
   db.collection.findOne({
@@ -146,15 +147,14 @@ const viewPath = "intro"
 
 const importMessages = (line, metaTypes) => {
   const message = line.split(FIELD_SEPERATOR);
-
   const viewMessage = (message[1] === viewPath);
 
-  if (message.length < 8)
+  if ((metaTypes.length === 0 && message.length > METADATA_START_INDEX) || (metaTypes.length !== 0 && message.length < METADATA_START_INDEX+1))
     return ERROR_STRING;
 
   let metaText = [];
-  for (let i=8; i<message.length; ++i) {
-    if (message[i] != '') metaText.push(message[i]);
+  for (let i=METADATA_START_INDEX; i<message.length; ++i) {
+    if (message[i] !== '') metaText.push(message[i]);
   }
 
   let metaArray = {};
@@ -193,7 +193,7 @@ const clearMessages = (file, headers) => {
 
       const viewMessage = (message[1] === viewPath);
 
-      if (message.length < 8)
+      if ((!message[METADATA_START_INDEX] && message.length > METADATA_START_INDEX) || (message[METADATA_START_INDEX] && message.length < METADATA_START_INDEX+1))
         return ERROR_STRING;
 
       const path = (viewMessage) ? "view" : "view.gauges.$";
@@ -393,13 +393,13 @@ router.use(formidable()).post('/import', (req, res) => {
     let metadataFields = [];
     lineReader.eachLine(req.files[""].path, function(line) {
       if (first) {
-        metadataFields = line.split(FIELD_SEPERATOR).splice(8);
+        metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
         first = false;
       }
-      else {
-        response.push(importMessages(line, metadataFields))};
+      else response.push(importMessages(line, metadataFields));
+    }, function (err) {
+      res.send(response.includes('error') ? { errors: ['Could not import file.'] } : response);
     });
-    res.send(response);
   }
 });
 
