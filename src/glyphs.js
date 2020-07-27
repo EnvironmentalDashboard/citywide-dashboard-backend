@@ -353,11 +353,6 @@ router.post('/:_id/messages', (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-//Used to update a message attached to a view
-=======
-// Used to update a message attached to a view
->>>>>>> master
 router.post('/:_id/messages/:num', (req, res) => {
   const processed = processMessageRequest(req);
 
@@ -369,8 +364,6 @@ router.post('/:_id/messages/:num', (req, res) => {
     updateMessages(req.params._id, `view.messages.${req.params.num - 1}`, processed).then(result => res.json(result));
   }
 });
-<<<<<<< HEAD
-=======
 
 // This route is used to import messages from a spreadsheet (CSV)
 router.use(formidable()).post('/import', (req, res) => {
@@ -396,5 +389,4 @@ router.use(formidable()).post('/import', (req, res) => {
   }
 });
 
->>>>>>> master
 module.exports = router;

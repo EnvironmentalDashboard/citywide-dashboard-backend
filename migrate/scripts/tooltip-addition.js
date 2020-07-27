@@ -1,7 +1,7 @@
 const ObjectId = require('mongodb').ObjectID
 const ID_STRING = "5d3f2b8672a1dcb5f8566562" //ID of corresponding entry.
 
-const canRun = collection => {
+const canRun = collection => (
   new Promise ((resolve, reject) => {
     collection.find({
       "_id" : ObjectId(ID_STRING)
@@ -9,9 +9,9 @@ const canRun = collection => {
     .toArray()
     .then(r => {
       resolve(r.some(i => i._id))
-    })
+    });
   })
-}
+)
 
 const run = collection => {
   collection.find({
