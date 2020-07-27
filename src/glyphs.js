@@ -271,6 +271,18 @@ router.post('/:_id/messages/:num/delete', (req, res) => {
       }
     }
   ).then(result => res.json(result));
+
+  //Then remove the null element in the array
+  db.collection.updateOne(
+    {
+      _id: new ObjectId(req.params._id)
+    },
+    {
+      $unset: {
+          [`view.messages`] : null
+      }
+    }
+  ).then(result => res.json(result));
 });
 
 //Used to delete a message attached to gauge
@@ -282,6 +294,18 @@ router.post('/:_id/gauges/:index/messages/:num/delete', (req, res) => {
     {
       $unset: {
           [`view.gauges.${req.params.index - 1}.messages.${req.params.num - 1}`] : ""
+      }
+    }
+  ).then(result => res.json(result));
+
+  //Then remove the null element in the array
+  db.collection.updateOne(
+    {
+      _id: new ObjectId(req.params._id)
+    },
+    {
+      $pull: {
+          [`view.gauges.${req.params.index - 1}.messages`] : null
       }
     }
   ).then(result => res.json(result));
