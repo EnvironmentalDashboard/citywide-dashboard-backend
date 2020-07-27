@@ -111,6 +111,74 @@ const updateMessages = (id, path, req) => {
   )
 };
 
+<<<<<<< HEAD
+=======
+/* Constant for what the name in the "gauge" field of the messages spreadsheet
+* should be when creating a message attached to a view.
+*/
+const viewPath = "intro"
+
+const importMessages = (line) => {
+  const message = line.split(FIELD_SEPERATOR);
+
+  if (message.length !== 4 && message.length !== 8)
+    return ERROR_STRING;
+
+  const viewMessage = (message[1] === viewPath);
+
+  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]) : message.splice(3, 5).map(num => Number(num))};
+
+  const path = (viewMessage) ? "view" : "view.gauges.$";
+
+  const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } }
+
+  if (path.match(/\u0000/g))
+    return ERROR_STRING;
+
+  return db.collection.updateOne(query,
+    {
+      $addToSet: {
+        [`${path}.messages`] : newMessage
+      }
+    }
+  )
+}
+
+const clearMessages = (file, headers) => {
+  let overwritten = [];
+
+  lineReader.eachLine(file, function(line) {
+    if (headers) headers = false;
+    else {
+      const message = line.split("\t");
+
+      if (message.length !== 4 && message.length !== 8)
+        return ERROR_STRING;
+
+      const viewMessage = (message[1] === viewPath);
+
+      const path = (viewMessage) ? "view" : "view.gauges.$";
+
+      const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } }
+
+      if (path.match(/\u0000/g))
+        return ERROR_STRING;
+
+      if (!overwritten.includes(message[0] + message[1])) {
+        db.collection.updateOne(query,
+          {
+            $set: {
+              [`${path}.messages`]: []
+            }
+          }
+        )
+        overwritten.push(message[0] + message[1]);
+      }
+    }
+  });
+}
+
+>>>>>>> master
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
   .then(result => (
