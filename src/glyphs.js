@@ -185,7 +185,7 @@ const importMessages = (line, metaTypes) => {
 
 const clearMessages = (file, headers) => {
   let overwritten = [];
-
+  let promises = [];
   lineReader.eachLine(file, function(line) {
     if (headers) headers = false;
     else {
@@ -204,17 +204,18 @@ const clearMessages = (file, headers) => {
         return ERROR_STRING;
 
       if (!overwritten.includes(message[0] + message[1])) {
-        db.collection.updateOne(query,
+        promises.push(db.collection.updateOne(query,
           {
             $set: {
               [`${path}.messages`]: []
             }
           }
-        )
+        ));
         overwritten.push(message[0] + message[1]);
       }
     }
   });
+  return promises;
 }
 
 router.get('/', (req, res) => (
@@ -382,25 +383,51 @@ router.post('/:_id/messages/:num', (req, res) => {
 router.use(formidable()).post('/import', (req, res) => {
   const processed = processImportRequest(req);
   const headers = (req.fields.headers) ? req.fields.headers:true;
+  let first = true;
+  let metadataFields = [];
   let response = [];
+  let promises = [];
+
   if (processed.errors.length > 0) {
     res.json({
       'errors': processed.errors
     });
   } else {
-    if (req.fields.type === "overwrite") clearMessages(req.files[""].path);
-    let first = true;
-    let metadataFields = [];
-    lineReader.eachLine(req.files[""].path, function(line) {
-      if (first) {
-        metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
-        first = false;
+    if (req.fields.type === "overwrite") {
+      //run Promise.all on an empty Array
+
+      Promise.all(clearMessages(req.files[""].path)
+          .then(result => {
+              //put everything after if 404-412...
+              lineReader.eachLine(req.files[""].path, function(line) {
+                  if (first) {
+                      metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
+                      first = false;
+                  } else response.push(importMessages(line, metadataFields));
+              }, function(err) {
+                  res.send(response.includes('error') ? {
+                      errors: ['Could not import file.']
+                  } : response);
+              });
+          });
       }
-      else response.push(importMessages(line, metadataFields));
-    }, function (err) {
-      res.send(response.includes('error') ? { errors: ['Could not import file.'] } : response);
-    });
+
+      else {
+          Promises.all([]).then(result => {
+              lineReader.eachLine(req.files[""].path, function(line) {
+                  if (first) {
+                      metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
+                      first = false;
+                  } else response.push(importMessages(line, metadataFields));
+              }, function(err) {
+                  res.send(response.includes('error') ? {
+                      errors: ['Could not import file.']
+                  } : response);
+              });
+          });
+      }
   }
 });
+
 
 module.exports = router;
