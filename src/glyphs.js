@@ -370,6 +370,7 @@ router.post('/:_id/messages', (req, res) => {
   }
 });
 
+// Used to update a message attached to a view
 router.post('/:_id/messages/:num', (req, res) => {
   const processed = processMessageRequest(req);
 
