@@ -27,7 +27,7 @@ const run = collection => {
                                 "text" : "Water from lakes, rivers, aquifers and even the ocean is collected and treated through a variety of processes to achieve needed water qualities for end uses such as drinking, irrigation, or industrial use.",
                                 "links" : []
                               },
-          "props.clickEffect" : "showToolTip"
+          "props.clickEffect" : "showTooltip"
           }
         }
       )
