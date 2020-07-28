@@ -18,7 +18,7 @@ const run = collection => {
     "_id" : ObjectId(ID_STRING)
   })
   .toArray()
-  .then(idEntires => {
+  .then(idEntries => {
     idEntries.forEach(idEntry => {
       collection.updateOne(
         { _id: new ObjectId(ID_STRING) },
