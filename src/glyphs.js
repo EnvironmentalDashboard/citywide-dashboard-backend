@@ -144,11 +144,11 @@ const updateMessages = (id, path, req) => {
 /* Constant for what the name in the "gauge" field of the messages spreadsheet
 * should be when creating a message attached to a view.
 */
-const viewPath = "intro"
+const viewPath = "intro";
 
-const importMessages = (line, metaTypes) => {
+const importMessage = (line, metaTypes) => {
   const message = line.split(FIELD_SEPERATOR);
-  const viewMessage = (message[1] === viewPath);
+  const viewMessage = message[1].localeCompare(viewPath, undefined, { sensitivity: 'base' }) === 0;
 
   if ((metaTypes.length === 0 && message.length > METADATA_START_INDEX) || (metaTypes.length !== 0 && message.length < METADATA_START_INDEX+1))
     return ERROR_STRING;
@@ -184,42 +184,43 @@ const importMessages = (line, metaTypes) => {
   )
 }
 
-const clearMessages = (file, headers) => {
-  let overwritten = [];
-  let promises = [];
+const clearMessages = (file, headers) => (
+  new Promise((resolve, reject) => {
+    let overwritten = [];
+    let promises = [];
 
-  lineReader.eachLine(file, line => {
-    if (headers) headers = false;
-    else {
-      const message = line.split("\t");
+    lineReader.eachLine(file, line => {
+      if (headers) {
+        headers = false;
+      } else {
+        const message = line.split(FIELD_SEPERATOR);
 
-      const viewMessage = (message[1] === viewPath);
+        const viewMessage = message[1].localeCompare(viewPath, undefined, { sensitivity: 'base' }) === 0;
 
-      if ((!message[METADATA_START_INDEX] && message.length > METADATA_START_INDEX) || (message[METADATA_START_INDEX] && message.length < METADATA_START_INDEX+1))
-        return ERROR_STRING;
+        if ((!message[METADATA_START_INDEX] && message.length > METADATA_START_INDEX) || (message[METADATA_START_INDEX] && message.length < METADATA_START_INDEX+1))
+          return ERROR_STRING;
 
-      const path = (viewMessage) ? "view" : "view.gauges.$";
+        const path = (viewMessage) ? "view" : "view.gauges.$";
 
-      const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } }
+        const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } }
 
-      if (path.match(/\u0000/g))
-        return ERROR_STRING;
+        if (path.match(/\u0000/g))
+          return ERROR_STRING;
 
-      if (!overwritten.includes(message[0] + message[1])) {
-        promises.push(db.collection.updateOne(query,
-          {
-            $set: {
-              [`${path}.messages`]: []
+        if (!overwritten.includes(message[0] + message[1])) {
+          promises.push(db.collection.updateOne(query,
+            {
+              $set: {
+                [`${path}.messages`]: []
+              }
             }
-          }
-        ));
-        overwritten.push(message[0] + message[1]);
+          ));
+          overwritten.push(message[0] + message[1]);
+        }
       }
-    }
-  });
-
-  return promises;
-}
+    }, err => err ? reject(err) : resolve(promises));
+  })
+);
 
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
@@ -383,6 +384,8 @@ router.post('/:_id/messages/:num', (req, res) => {
 });
 
 // This route is used to import messages from a spreadsheet (TSV)
+// SC: I *really* do not like the lineReader library, and would
+// prefer that the library switched out if this is worked on in the future.
 router.use(formidable()).post('/import', (req, res) => {
   const processed = processImportRequest(req);
 
@@ -391,9 +394,12 @@ router.use(formidable()).post('/import', (req, res) => {
       'errors': processed.errors
     });
   } else {
-    const clearPromises = req.fields.type === "overwrite" ? clearMessages(req.files[""].path) : [];
+    const headers = req.fields.headers || true;
 
-    Promise.all(clearPromises)
+    // If we are not clearing, we will provide a dummy promise that will just resolve.
+    const clearPromise = req.fields.type === "overwrite" ? clearMessages(req.files[""].path, headers) : new Promise();
+
+    clearPromise
     .then(result => {
       let first = true;
       let metadataFields = [];
@@ -404,7 +410,7 @@ router.use(formidable()).post('/import', (req, res) => {
               metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
               first = false;
           } else {
-            response.push(importMessages(line, metadataFields));
+            response.push(importMessage(line, metadataFields));
           }
       }, err => {
         Promise.all(response)
