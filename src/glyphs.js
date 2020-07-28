@@ -11,8 +11,10 @@ const db = require('./db');
 const sha256 = require('js-sha256');
 const salt = "719GxFYNgo";
 const pass = "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139";
+
 const FIELD_SEPERATOR = "\t";
 const ERROR_STRING = 'error';
+const METADATA_START_INDEX = 8;
 
 const getGlyphById = id => (
   db.collection.findOne({
@@ -23,14 +25,14 @@ const getGlyphById = id => (
 const getGlyphGaugesById = id => (
   getGlyphById(id)
   .then(result => (
-    result.view ? result.view.gauges : []
+    (result.view && result.view.gauges) ? result.view.gauges : []
   ))
 );
 
 const getGlyphMessagesById = id => (
   getGlyphById(id)
   .then(result => (
-    result.view ? result.view.messages : []
+    result.view.messages ? result.view.messages : []
   ))
 );
 
@@ -142,17 +144,29 @@ const updateMessages = (id, path, req) => {
 /* Constant for what the name in the "gauge" field of the messages spreadsheet
 * should be when creating a message attached to a view.
 */
-const viewPath = "intro"
+const viewPath = "intro";
 
-const importMessages = (line) => {
+const importMessage = (line, metaTypes) => {
   const message = line.split(FIELD_SEPERATOR);
+  const viewMessage = message[1].localeCompare(viewPath, undefined, { sensitivity: 'base' }) === 0;
 
-  if (message.length !== 4 && message.length !== 8)
+  if ((metaTypes.length === 0 && message.length > METADATA_START_INDEX) || (metaTypes.length !== 0 && message.length < METADATA_START_INDEX+1))
     return ERROR_STRING;
 
-  const viewMessage = (message[1] === viewPath);
+  let metaText = [];
+  for (let i = METADATA_START_INDEX; i < message.length; ++i) {
+    if (message[i] !== '') metaText.push(message[i]);
+  }
 
-  const newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]) : message.splice(3, 5).map(num => Number(num))};
+  let metaArray = {};
+  for (let i = 0; i < metaTypes.length; i++) {
+    if (metaText[i])
+      metaArray[metaTypes[i]] = metaText[i];
+  }
+
+  let newMessage = {"text": message[2], "probability": (viewMessage) ? Number(message[3]):message.splice(3, 5).map(num => Number(num))};
+
+  if (metaTypes.length > 0 &&  metaText.length > 0) newMessage = {...newMessage, "metadata" : metaArray};
 
   const path = (viewMessage) ? "view" : "view.gauges.$";
 
@@ -170,40 +184,43 @@ const importMessages = (line) => {
   )
 }
 
-const clearMessages = (file, headers) => {
-  let overwritten = [];
+const clearMessages = (file, headers) => (
+  new Promise((resolve, reject) => {
+    let overwritten = [];
+    let promises = [];
 
-  lineReader.eachLine(file, function(line) {
-    if (headers) headers = false;
-    else {
-      const message = line.split("\t");
+    lineReader.eachLine(file, line => {
+      if (headers) {
+        headers = false;
+      } else {
+        const message = line.split(FIELD_SEPERATOR);
 
-      if (message.length !== 4 && message.length !== 8)
-        return 'error';
+        const viewMessage = message[1].localeCompare(viewPath, undefined, { sensitivity: 'base' }) === 0;
 
-      const viewMessage = (message[1] === viewPath);
+        if ((!message[METADATA_START_INDEX] && message.length > METADATA_START_INDEX) || (message[METADATA_START_INDEX] && message.length < METADATA_START_INDEX+1))
+          return ERROR_STRING;
 
-      const path = (viewMessage) ? "view" : `view.gauges.${message[1]}`;
+        const path = (viewMessage) ? "view" : "view.gauges.$";
 
-      if (path.match(/\u0000/g))
-        return 'error';
+        const query = (path === "view") ? {"view.name" : message[0].toLowerCase()} : {"view.gauges.name": { $regex : new RegExp(message[1], "i") } }
 
-      if (!overwritten.includes(message[0] + path)) {
-        db.collection.updateOne(
-          {
-            "view.name": message[0].toLowerCase()
-          },
-          {
-            $set: {
-              [`${path}.messages`]: []
+        if (path.match(/\u0000/g))
+          return ERROR_STRING;
+
+        if (!overwritten.includes(message[0] + message[1])) {
+          promises.push(db.collection.updateOne(query,
+            {
+              $set: {
+                [`${path}.messages`]: []
+              }
             }
-          }
-        )
-        overwritten.push(message[0].toLowerCase() + path);
+          ));
+          overwritten.push(message[0] + message[1]);
+        }
       }
-    }
-  });
-}
+    }, err => err ? reject(err) : resolve(promises));
+  })
+);
 
 router.get('/', (req, res) => (
   db.collection.find({}).sort({ layer: 1 }).toArray()
@@ -365,28 +382,44 @@ router.post('/:_id/messages/:num', (req, res) => {
   }
 });
 
-// This route is used to import messages from a spreadsheet (CSV)
+// This route is used to import messages from a spreadsheet (TSV)
+// SC: I *really* do not like the lineReader library, and would
+// prefer that the library switched out if this is worked on in the future.
 router.use(formidable()).post('/import', (req, res) => {
   const processed = processImportRequest(req);
-  const headers = (req.fields.headers) ? req.fields.headers:true;
-
-  let response = [];
 
   if (processed.errors.length > 0) {
     res.json({
       'errors': processed.errors
     });
   } else {
-    if (req.fields.type === "overwrite") clearMessages(req.files[""].path);
+    const headers = req.fields.headers || true;
 
-    let first = true;
-    lineReader.eachLine(req.files[""].path, function(line) {
-      if (first) first = false;
-      else response.push(importMessages(line));
-    }, function (err) {
-      res.send(response.includes('error') ? { errors: ['Could not import file.'] } : response);
+    // If we are not clearing, we will provide a dummy promise that will just resolve.
+    const clearPromise = req.fields.type === "overwrite" ? clearMessages(req.files[""].path, headers) : new Promise();
+
+    clearPromise
+    .then(result => {
+      let first = true;
+      let metadataFields = [];
+      let response = [];
+
+      lineReader.eachLine(req.files[""].path, line => {
+          if (first) {
+              metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
+              first = false;
+          } else {
+            response.push(importMessage(line, metadataFields));
+          }
+      }, err => {
+        Promise.all(response)
+        .then(answer => res.send(response.includes(ERROR_STRING) ? {
+          errors: ['Could not import file.']
+        } : answer));
+      });
     });
   }
 });
+
 
 module.exports = router;

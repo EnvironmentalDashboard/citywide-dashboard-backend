@@ -1,9 +1,8 @@
 const qs = require('querystring');
 
 const urltoGaugeName = url => {
-  return qs.decode(url).title();
+  return qs.decode(url).title;
 }
-
 
 const canRun = collection => (
   new Promise((resolve, reject) => {
@@ -60,4 +59,4 @@ const run = collection => {
   });
 }
 
-module.exports { canRun, run };
+module.exports = { canRun, run };
