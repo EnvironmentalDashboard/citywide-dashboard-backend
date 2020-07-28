@@ -11,6 +11,7 @@ const db = require('./db');
 const sha256 = require('js-sha256');
 const salt = "719GxFYNgo";
 const pass = "700e78f75bf9abb38e9b2f61b227afe94c204947eb0227174c48f55a4dcc8139";
+
 const FIELD_SEPERATOR = "\t";
 const ERROR_STRING = 'error';
 const METADATA_START_INDEX = 8;
@@ -153,12 +154,12 @@ const importMessages = (line, metaTypes) => {
     return ERROR_STRING;
 
   let metaText = [];
-  for (let i=METADATA_START_INDEX; i<message.length; ++i) {
+  for (let i = METADATA_START_INDEX; i < message.length; ++i) {
     if (message[i] !== '') metaText.push(message[i]);
   }
 
   let metaArray = {};
-  for (let i=0; i<metaTypes.length; i++) {
+  for (let i = 0; i < metaTypes.length; i++) {
     if (metaText[i])
       metaArray[metaTypes[i]] = metaText[i];
   }
@@ -186,7 +187,8 @@ const importMessages = (line, metaTypes) => {
 const clearMessages = (file, headers) => {
   let overwritten = [];
   let promises = [];
-  lineReader.eachLine(file, function(line) {
+
+  lineReader.eachLine(file, line => {
     if (headers) headers = false;
     else {
       const message = line.split("\t");
@@ -215,6 +217,7 @@ const clearMessages = (file, headers) => {
       }
     }
   });
+
   return promises;
 }
 
@@ -379,53 +382,37 @@ router.post('/:_id/messages/:num', (req, res) => {
   }
 });
 
-// This route is used to import messages from a spreadsheet (CSV)
+// This route is used to import messages from a spreadsheet (TSV)
 router.use(formidable()).post('/import', (req, res) => {
   const processed = processImportRequest(req);
-  const headers = (req.fields.headers) ? req.fields.headers:true;
-  let first = true;
-  let metadataFields = [];
-  let response = [];
-  let promises = [];
 
   if (processed.errors.length > 0) {
     res.json({
       'errors': processed.errors
     });
   } else {
-    if (req.fields.type === "overwrite") {
-      //run Promise.all on an empty Array
+    const clearPromises = req.fields.type === "overwrite" ? clearMessages(req.files[""].path) : [];
 
-      Promise.all(clearMessages(req.files[""].path)
-          .then(result => {
-              //put everything after if 404-412...
-              lineReader.eachLine(req.files[""].path, function(line) {
-                  if (first) {
-                      metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
-                      first = false;
-                  } else response.push(importMessages(line, metadataFields));
-              }, function(err) {
-                  res.send(response.includes('error') ? {
-                      errors: ['Could not import file.']
-                  } : response);
-              });
-          });
-      }
+    Promise.all(clearPromises)
+    .then(result => {
+      let first = true;
+      let metadataFields = [];
+      let response = [];
 
-      else {
-          Promises.all([]).then(result => {
-              lineReader.eachLine(req.files[""].path, function(line) {
-                  if (first) {
-                      metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
-                      first = false;
-                  } else response.push(importMessages(line, metadataFields));
-              }, function(err) {
-                  res.send(response.includes('error') ? {
-                      errors: ['Could not import file.']
-                  } : response);
-              });
-          });
-      }
+      lineReader.eachLine(req.files[""].path, line => {
+          if (first) {
+              metadataFields = line.split(FIELD_SEPERATOR).splice(METADATA_START_INDEX);
+              first = false;
+          } else {
+            response.push(importMessages(line, metadataFields));
+          }
+      }, err => {
+        Promise.all(response)
+        .then(answer => res.send(response.includes(ERROR_STRING) ? {
+          errors: ['Could not import file.']
+        } : answer));
+      });
+    });
   }
 });
 
