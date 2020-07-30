@@ -23,7 +23,11 @@ const run = collection => {
         { _id: idEntry._id },
         {
           $set: {
-            data_url: "https://qa.communityhub.cloud/data-hub/meters/compare/1414c3a0-cda7-11e8-9c46-02420aff0702/1414c3a0-cda7-11e8-9c46-02420aff0702"
+            data_url: "https://qa.communityhub.cloud/data-hub/meters/compare/1414c3a0-cda7-11e8-9c46-02420aff0702/1414c3a0-cda7-11e8-9c46-02420aff0702",
+            'animators.pathMover.maxDuration': idEntry.animators.pathMover.duration
+          },
+          $unset: {
+            'animators.pathMover.duration': ''
           }
         }
       )
